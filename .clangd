@@ -1,0 +1,26 @@
+Diagnostics:
+  ClangTidy:
+    Add:
+      - "*"
+    Remove:
+      - google-*
+      - llvmlibc-*
+      - fuchsia-*
+      - altera-*
+      - abseil-*
+      - boost-*
+      - misc-use-anonymous-namespace
+      - modernize-use-trailing-return-type
+CompileFlags:
+  CompilationDatabase: .build
+  Add: [-Wno-unknown-warning-option]
+  Remove: [-m*, -f*]
+
+---
+
+If:
+  PathMatch: tests/.*
+CompileFlags:
+  Add: [ -DUNIT_TESTING, -Wno-unused-value, -Wno-comma ] # unused-value and comma warn about assert(("message", condition))
+  CompilationDatabase: .build-tests
+
