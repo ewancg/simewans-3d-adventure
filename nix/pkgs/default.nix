@@ -23,6 +23,10 @@ let buildInputs = [
   inherit buildInputs;
   passthru.runtimeLibs = buildInputs;
 
+  env = lib.optionalAttrs stdenv.hostPlatform.isWindows {
+    LDFLAGS = "-static";
+  };
+
   meta = {
     description = "${name} ${arch}";
   } // lib.optionalAttrs (!isNull platform) {

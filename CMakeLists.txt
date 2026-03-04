@@ -32,23 +32,24 @@ function(create_main_executable TARGET)
   set(CMAKE_CXX_STANDARD_REQUIRED ON)
   set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+  set(LIBRARIES ${ARG_LIBRARIES})
+  set(DEFINES ${ARG_DEFINES})
+  set(INCLUDE_DIRS ${ARG_INCLUDE_DIRS} "${CMAKE_SOURCE_DIR}/include"
+                   "${CMAKE_SOURCE_DIR}/external")
+
+  # March 2026 (twenty six!!!); Certain C++23 features are experimental in MinGW
+  if(WIN32 AND (MSYS OR MINGW))
+    list(APPEND LIBRARIES "stdc++exp")
+  endif()
+
   add_executable("${TARGET}" ${TARGET_SOURCES})
-  target_compile_definitions(
-    "${TARGET}" PRIVATE ${ARG_DEFINES} #
-                        #
+  target_compile_definitions("${TARGET}" PRIVATE ${DEFINES})
+  target_link_libraries("${TARGET}" PRIVATE ${LIBRARIES})
+  target_include_directories("${TARGET}" PRIVATE ${INCLUDE_DIRS})
+  set_target_properties(
+    "${TARGET}" PROPERTIES WIN32_EXECUTABLE ON #
+                           MACOSX_BUNDLE ON #
   )
-  target_link_libraries(
-    "${TARGET}" PRIVATE ${ARG_LIBRARIES} #
-                        #
-  )
-  target_include_directories(
-    "${TARGET}"
-    PRIVATE ${ARG_INCLUDE_DIRS} #
-            "${CMAKE_SOURCE_DIR}/include" #
-            "${CMAKE_SOURCE_DIR}/external" #
-  )
-  set_target_properties("${TARGET}" PROPERTIES WIN32_EXECUTABLE ON MACOSX_BUNDLE
-                                                                   ON)
 endfunction()
 
 # find_package and such
