@@ -23,7 +23,8 @@ function(create_main_executable TARGET)
     ${ARGN})
 
   unset(ROOT_SOURCES)
-  foreach(SRC main.cpp)
+  foreach(SRC   main.cpp
+                input.cpp)
     list(APPEND ROOT_SOURCES "${CMAKE_SOURCE_DIR}/src/${SRC}")
   endforeach()
   set(TARGET_SOURCES ${ARG_SOURCES} ${ROOT_SOURCES})
