@@ -2,8 +2,12 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs";
     flake-utils.url = "github:numtide/flake-utils";
-    rust-overlay.url = "github:oxalica/rust-overlay";
 
+    # Contains runtime configuration for nix shell
+    localConfigNix = {
+      url = "path:./nix/local-config.nix";
+      flake = false;
+    };
     # Contains runtime configuration for nix shell
     configNix = {
       url = "path:./nix/config.nix";
@@ -35,7 +39,6 @@
         let
           pkgs = import nixpkgs {
             inherit system;
-            overlays = [ (import inputs.rust-overlay) ];
           };
           lib = pkgs.lib;
           packages = import packagesNix {
@@ -45,7 +48,7 @@
             inherit pkgs config;
           };
           config = import configNix {
-            inherit self name pkgs system scripts packages;
+            inherit self name pkgs system scripts stdenv packages;
           };
           stdenv = pkgs.stdenvAdapters.useWildLinker pkgs.gccStdenv;
           buildInputs =
@@ -74,6 +77,9 @@
               clang-tools # clangd, clang-format, clang-tidy
               jq
               oils-for-unix
+
+              libllvm # llvm-symbolizer, for sanitizers at runtime
+              valgrind
             ])
             ++ scripts.packages;
         in

@@ -2,13 +2,16 @@
   name,
   pkgs,
   scripts,
+  stdenv,
   packages,
   ...
 }:
 let
-  main_binary_name = name;
+  mainBinaryName = name;
 in
 rec {
+  inherit mainBinaryName;
+
   transientDirectories = {
     build = ".build";
     testsBuild = ".build-tests";
@@ -33,6 +36,9 @@ rec {
         TESTS_SRC_DIR = "$PROJECT_ROOT/tests";
         TESTS_BUILD_DIR = "$PROJECT_ROOT/${transientDirectories.testsBuild}";
         TESTS_DEFAULT_CONFIG = "Release";
+
+        ASAN_SYMBOLIZER_PATH = "${pkgs.libllvm}/bin/llvm-symbolizer"; # https://clang.llvm.org/docs/AddressSanitizer.html#symbolizing-the-reports
+        ASAN_OPTIONS = "check_initialization_order=1,detect_leaks=1"; # https://clang.llvm.org/docs/AddressSanitizer.html#initialization-order-checking
 
         # It sometimes gets stuck waiting for sccache
         GENERATE_TIMEOUT = 30;
@@ -79,19 +85,29 @@ rec {
   projectDotfiles =
     let
       files = {
-        ".zed/debug.json" = builtins.toJSON [
+        ".zed/debug.json" = let nativeTarget = "${transientDirectories.run}/debug"; in builtins.toJSON [
           {
-            label = "Debug main executable";
-            build = {
+            label = "Debug main executable (native)";
+            build = let in {
               command = "${scripts.scripts.get-executable.pkg}/bin/get-executable";
-              args = [ "${main_binary_name}" "Debug" "$EDITOR_RUN_DIR/debug" ];
+              args = [ "${mainBinaryName}" "Debug" nativeTarget ];
             };
-            program = "$EDITOR_RUN_DIR/debug";
+            program = nativeTarget;
             request = "launch";
             adapter = "CodeLLDB";
           }
-        ];
+          {
+            label = "Debug main executable (Windows via. WSL2)";
+            build = let in {
+              command = "${scripts.scripts.get-executable-wsl.pkg}/bin/get-executable-wsl";
+              args = [ "${mainBinaryName}" "Debug" nativeTarget ];
+            };
+            program = nativeTarget;
+            request = "launch";
+            adapter = "CodeLLDB";
+          }
 
+        ];
         ".zed/settings.json" =
           let
             clang-tool = name: "${pkgs.clang-tools}/bin/${name}";
@@ -162,6 +178,8 @@ rec {
       ".git/info/exclude" = ''
         .direnv
         .env
+
+        nix/local-config.nix
 
         # Nix build
         result

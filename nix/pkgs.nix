@@ -10,7 +10,7 @@ let
       cd staging
       zip -r $out/${srcName}.zip .
     '');
-  mkPackage = { file, pkgs, srcName ? null, platform ? null }: pkgs.callPackage file {
+  mkPackage = { file, pkgs, srcName ? null, platform ? null, debug }: pkgs.callPackage file {
     src = self;
     name =
       if (!isNull srcName) then
@@ -18,17 +18,21 @@ let
       else
         name;
     arch = srcName;
-    inherit platform;
+    inherit platform debug;
   };
   mkFullPackage = (srcName: file: pkgs: platform:
     let
-      pkg = mkPackage {
-        inherit file pkgs srcName platform;
+      mkPkg = { debug ? false }: mkPackage {
+        inherit file pkgs srcName platform debug;
       };
+      releasePkg = mkPkg {};
+      debugPkg = mkPkg { debug = true; };
     in
     {
-      "${srcName}" = pkg;
-      "${srcName}-zip" = mkZip "${srcName}" pkg;
+      "${srcName}" = releasePkg;
+      "${srcName}-debug" = debugPkg;
+      "${srcName}-zip" = mkZip "${srcName}" releasePkg;
+      "${srcName}-debug-zip" = mkZip "${srcName}" debugPkg;
     });
 in
 { default = pkgs.callPackage ./pkgs/default.nix { inherit name; src = self; }; }

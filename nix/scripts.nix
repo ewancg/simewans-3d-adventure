@@ -88,15 +88,27 @@ let
         fi
         exit $return
       '';
-    get-executable = name: '' # $1 binary; $2 CMake config ; $3 output
+    get-executable = name: ''
+      # $1 binary; $2 CMake config ; $3 output
       BINARY_NAME="$1" && shift
       CONFIG="$1" && shift
       OUTPUT="$1" && shift
-      BINARY="$(${scripts.run.pkg}/bin/run -q -c "$CONFIG" "$BINARY_NAME")"
-      [ -L "$OUTPUT" ] && rm "$OUTPUT"
+      [ -e "$OUTPUT" ] && rm "$OUTPUT"
       OUTPUT_DIRNAME="$(dirname "$OUTPUT")"
       [ ! -d "$OUTPUT_DIRNAME" ] && mkdir -p "$OUTPUT_DIRNAME"
+      BINARY="$(${scripts.run.pkg}/bin/run -q -c "$CONFIG" "$BINARY_NAME")"
       ln "$BINARY" "$OUTPUT"
+    '';
+    get-executable-wsl = name: ''
+      BINARY_NAME="$1" && shift
+      CONFIG="$1" && shift
+      OUTPUT="''${1}.exe" && shift
+      [ -e "$OUTPUT" ] && rm "$OUTPUT"
+      OUTPUT_DIRNAME="$(dirname "$OUTPUT")"
+      [ ! -d "$OUTPUT_DIRNAME" ] && mkdir -p "$OUTPUT_DIRNAME"
+      nix build ".#windows-x86_64-debug" --extra-experimental-features "nix-command flakes"
+      BINARY="''${PWD}/result/bin/''${BINARY_NAME}"
+      ln -s "$BINARY" "$OUTPUT"
     '';
     build = name: '' # $1 CMake config; $2 source dir; $3 build dir
         CONFIG="''${1:-Release}" && shift
