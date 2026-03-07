@@ -1,48 +1,63 @@
 #include "graphics.h"
+#include "window.h"
 
-namespace window {
-void init(Window &ctx) {
-  ctx.m_width = WINDOW_START_WIDTH;
-  ctx.m_height = WINDOW_START_HEIGHT;
-  ctx.m_handle = std::shared_ptr<SDL_Window>(
-      SDL_CreateWindow(ctx.m_name.c_str(), ctx.m_width, ctx.m_height, SDL_WINDOW_RESIZABLE), SDL_DestroyWindow);
+#ifndef GRAPHICS_DEBUGGING
+#define GRAPHICS_DEBUGGING false
+#endif
+
+namespace graphics {
+using enum EError;
+Error init(Graphics &ctx) {
+  if (!SDL_InitSubSystem(SDL_INIT_VIDEO)) {
+    return {SUBSYSTEM_INIT, SDL_GetError()};
+  }
+  auto *device = SDL_CreateGPUDevice(SDL_GPU_SHADERFORMAT_SPIRV | SDL_GPU_SHADERFORMAT_DXIL | SDL_GPU_SHADERFORMAT_MSL,
+                                     GRAPHICS_DEBUGGING, nullptr);
+  if (device == nullptr) {
+    return {GPU_INIT, SDL_GetError()};
+  }
+
+  auto *cmd_buf = SDL_AcquireGPUCommandBuffer(device);
+  if (cmd_buf == nullptr) {
+    return {GPU_INIT_CMDBUF, SDL_GetError()};
+  }
+
+  ctx.m_handle = std::shared_ptr<SDL_GPUDevice>(device, SDL_DestroyGPUDevice);
+  ctx.m_main_command_buffer = std::shared_ptr<SDL_GPUCommandBuffer>(cmd_buf, [](auto) {
+    // SDL explicitly says not to free this
+  });
+
+  return {};
 };
 
-WindowError show(Window &ctx) {
-  if (!SDL_ShowWindow(ctx.m_handle.get())) {
-    return std::make_tuple(WINDOW_ERROR_SHOW, SDL_GetError());
+Error attach_window(Graphics &ctx, Window &window) {
+  auto *gpu = ctx.m_handle.get();
+  auto *win = window.m_handle.get();
+
+  if (!SDL_ClaimWindowForGPUDevice(gpu, win)) {
+    return {GPU_WINDOW_CLAIM, SDL_GetError()};
   }
-  ctx.m_ticking = true;
-  return std::nullopt;
+  if (!SDL_SetGPUSwapchainParameters(gpu, win, SDL_GPU_SWAPCHAINCOMPOSITION_SDR, SDL_GPU_PRESENTMODE_IMMEDIATE)) {
+    return {SET_SWAPCHAIN_PARAMS, SDL_GetError()};
+  }
+  return {};
 }
 
-WindowError hide(Window &ctx) {
-  if (!SDL_HideWindow(ctx.m_handle.get())) {
-    return std::make_tuple(WINDOW_ERROR_HIDE, SDL_GetError());
+Error get_window_swapchain_texture(Graphics &ctx, Window &window, SDL_GPUTexture *output) {
+  if (!ctx.m_main_command_buffer) {
+    return {GET_WINDOW_SWAPCHAIN_TEXTURE, "graphics::get_swapchain_texture called without a rendering command buffer"};
   }
-  ctx.m_ticking = false;
-  return std::nullopt;
+  auto *cmd_buf = ctx.m_main_command_buffer.get();
+  if (!window.m_handle) {
+    return {GET_WINDOW_SWAPCHAIN_TEXTURE, "graphics::get_swapchain_texture called without a window"};
+  }
+  auto *win = window.m_handle.get();
+
+  if (!SDL_WaitAndAcquireGPUSwapchainTexture(cmd_buf, win, &output, &window.m_width, &window.m_height)) {
+    return {GET_WINDOW_SWAPCHAIN_TEXTURE, SDL_GetError()};
+  }
+
+  return {};
 }
 
-SDL_Window *get_handle(Window &ctx) { return ctx.m_handle.get(); }
-
-WindowError handle_event(Window &ctx, SDL_WindowEvent event) {
-  switch (event.type) {
-  case SDL_EVENT_WINDOW_FOCUS_LOST:
-    ctx.m_focused = false;
-    break;
-  case SDL_EVENT_WINDOW_FOCUS_GAINED:
-    ctx.m_focused = true;
-    break;
-  case SDL_EVENT_WINDOW_RESIZED:
-    ctx.m_width = event.data1;
-    ctx.m_height = event.data2;
-    // glViewport(0, 0, ctx.m_width, ctx.m_height);
-    ctx.m_resized = true;
-    break;
-  default:
-    break;
-  }
-  return std::nullopt;
-}
-} // namespace window
+} // namespace graphics

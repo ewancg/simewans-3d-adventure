@@ -90,9 +90,9 @@ rec {
             label = "Debug main executable";
             build = {
               command = "${scripts.scripts.get-executable.pkg}/bin/get-executable";
-              args = [ "${main_binary_name}" "Debug" "$EDITOR_RUN_DIR/debug" ];
+              args = [ "${main_binary_name}" "Debug" "${transientDirectories.run}/debug" ];
             };
-            program = "$EDITOR_RUN_DIR/debug";
+            program = "${transientDirectories.run}/debug";
             request = "launch";
             adapter = "CodeLLDB";
           }

@@ -1,10 +1,22 @@
 #pragma once
-#include "graphics.h"
-#include <SDL3/SDL_events.h>
+#include "window.h"
 #include <bitset>
 
-struct Input;
 namespace input {
+enum class EError : uint8_t {
+  INIT = 0,
+  SUBSYSTEM_INIT,
+  UPDATE,
+  SET_MOUSE_POS,
+};
+ERROR_CONTEXT_TYPE({
+case SUBSYSTEM_INIT:
+  return "initializing input subsystem";
+case UPDATE:
+  return "processing input events";
+case SET_MOUSE_POS:
+  return "setting the mouse cursor position";
+})
 enum EMapping : uint8_t {
   KEY_A = 0,
   KEY_B,
@@ -73,27 +85,19 @@ struct MouseData {
   float x, y;
   float xm, ym;
 };
-enum EError : uint8_t {
-  INPUT_ERROR_INIT = 0,
-  INPUT_ERROR_UPDATE,        // while processing events from SDL
-  INPUT_ERROR_SET_MOUSE_POS, // while we were setting the mouse pos
-};
-using Error = ErrorBase<EError>;
+
 Error init(Input &ctx);
 Error deinit(Input &ctx);
 Error update(Input &ctx);
 
-// checks to see if the input is down
-bool mapping_is_down(const Input &ctx, EMapping input);
-// checks to see if the input was pressed
-bool mapping_was_pressed(const Input &ctx, EMapping input);
-
+/// Checks if the input is currently down
+bool mapping_is_pressed(const Input &ctx, EMapping input);
+/// Checks if the input is currently down, and was not last frame
+bool mapping_newly_pressed(const Input &ctx, EMapping input);
+/// Sets the mouse cursor to an absolute position
 Error set_mouse_pos(Input &ctx, uint32_t x_pos, uint32_t y_pos);
+/// Centers the cursor within the screen
 Error center_mouse_pos(Input &ctx);
-const MouseData &get_mouse_data(Input &ctx);
-
-void set_input_key(EMapping input, char key);
-
 } // namespace input
 struct Input {
   input::MouseData m_mouse_data{};

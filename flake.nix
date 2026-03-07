@@ -74,6 +74,7 @@
           nativeBuildInputs =
             (with pkgs; [
               gdb
+              clang # clang is required to act as the linker when sanitizers are enabled
               clang-tools # clangd, clang-format, clang-tidy
               jq
               oils-for-unix

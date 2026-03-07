@@ -75,7 +75,7 @@ option(
 include(CMakeDependentOption)
 function(enable_sanitizers)
   foreach(SANITIZER ${ARGN})
-    set("${SANITIZER}" ON FORCE)
+    set_property(CACHE "${SANITIZER}" PROPERTY VALUE ON)
   endforeach()
 endfunction()
 if(SAN_PRESET_ASAN)
@@ -108,20 +108,70 @@ if(ADDRESS_SAN
   set(CMAKE_CXX_LINK_EXECUTABLE "clang++ ${LINKER_FLAGS}")
   set(CMAKE_C_LINK_EXECUTABLE "clang ${LINKER_FLAGS}")
 endif()
+function(add_flags LIST FLAGS)
+  cmake_parse_arguments(AF "GCC_SKIP" "" "GCC_FLAGS" ${ARGN})
+  if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    if(AF_GCC_SKIP)
+      return()
+    elseif(AF_GCC_FLAGS)
+      list(APPEND ${LIST} ${AF_GCC_FLAGS})
+    else()
+      list(APPEND ${LIST} ${FLAGS})
+    endif()
+  else()
+    list(APPEND ${LIST} ${FLAGS})
+  endif()
+  set(${LIST}
+      "${${LIST}}"
+      PARENT_SCOPE)
+endfunction()
 
-function(populate_sanitizer_flags LIST)
-  list(
-    APPEND
-    ${LIST}
-    "$<$<BOOL:${SANITIZER_BACKTRACE_FLAGS}>:-fno-omit-frame-pointer -fno-optimize-sibling-calls>"
-    "$<$<BOOL:${SANITIZER_RT_WARNING_FLAGS}>:-g>"
-    "$<$<BOOL:${ADDRESS_SAN}>:-fsanitize=address>"
-    "$<$<BOOL:${THREAD_SAN}>:-fsanitize=thread>"
-    "$<$<BOOL:${MEMORY_SAN}>:-fsanitize=memory>"
-    "$<$<BOOL:${MEMORY_SAN_EX}>:-fsanitize-memory-track-origins>"
-    "$<$<BOOL:${UB_SAN}>:-fsanitize=undefined,undefined-strip-path-components=-2>"
-    "$<$<BOOL:${UB_SAN_EX}>:-fsanitize=integer,implicit-conversion,nullability>"
-    "$<$<BOOL:${LEAK_SAN}>:-fsanitize=leak>"
-    "$<$<BOOL:${TYPE_SAN}>:-fsanitize=type>"
-    "$<$<BOOL:${RT_SAN}>:-fsanitize=realtime>")
+function(apply_sanitizers TARGET)
+  set(SANITIZER_FLAGS "")
+  set(SANITIZER_GCC_LIBS "")
+
+  if(SANITIZER_BACKTRACE_FLAGS)
+    add_flags(SANITIZER_FLAGS
+              "-fno-omit-frame-pointer;-fno-optimize-sibling-calls")
+  endif()
+  if(SANITIZER_RT_WARNING_FLAGS)
+    add_flags(SANITIZER_FLAGS "-g")
+  endif()
+  if(ADDRESS_SAN)
+    add_flags(SANITIZER_FLAGS "-fsanitize=address")
+  endif()
+  if(THREAD_SAN)
+    add_flags(SANITIZER_FLAGS "-fsanitize=thread")
+  endif()
+  if(MEMORY_SAN)
+    add_flags(SANITIZER_FLAGS "-fsanitize=memory")
+  endif()
+  if(MEMORY_SAN_EX)
+    add_flags(SANITIZER_FLAGS "-fsanitize-memory-track-origins")
+  endif()
+  if(UB_SAN)
+    add_flags(SANITIZER_FLAGS
+              "-fsanitize=undefined,undefined-strip-path-components=-2"
+              GCC_FLAGS "-fsanitize=undefined")
+    add_flags(SANITIZER_GCC_LIBS "ubsan")
+  endif()
+  if(UB_SAN_EX)
+    add_flags(SANITIZER_FLAGS
+              "-fsanitize=integer,implicit-conversion,nullability" GCC_SKIP)
+  endif()
+  if(LEAK_SAN)
+    add_flags(SANITIZER_FLAGS "-fsanitize=leak")
+  endif()
+  if(TYPE_SAN)
+    add_flags(SANITIZER_FLAGS "-fsanitize=type" GCC_SKIP)
+  endif()
+  if(RT_SAN)
+    add_flags(SANITIZER_FLAGS "-fsanitize=realtime")
+  endif()
+
+  target_compile_options("${TARGET}" PRIVATE ${SANITIZER_FLAGS})
+  target_link_options("${TARGET}" PRIVATE ${SANITIZER_FLAGS})
+  if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND SANITIZER_GCC_LIBS)
+    target_link_libraries("${TARGET}" PRIVATE ${SANITIZER_GCC_LIBS})
+  endif()
 endfunction()

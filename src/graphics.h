@@ -1,31 +1,38 @@
 #pragma once
 
-#define WINDOW_START_WIDTH 960
-#define WINDOW_START_HEIGHT 540
-
-struct Window;
-namespace window {
-enum EError : uint8_t {
-  // WINDOW_ERROR_INIT,
-  WINDOW_ERROR_SHOW = 0,
-  WINDOW_ERROR_HIDE,
+namespace graphics {
+enum class EError : uint8_t {
+  SUBSYSTEM_INIT = 0,
+  GPU_INIT,
+  GPU_INIT_CMDBUF,
+  GPU_WINDOW_CLAIM,
+  SET_SWAPCHAIN_PARAMS,
+  GET_WINDOW_SWAPCHAIN_TEXTURE,
 };
-using Error = ErrorBase<EError>;
 
-void init(Window &ctx);
-Error show(Window &ctx);
-Error hide(Window &ctx);
+ERROR_CONTEXT_TYPE({
+case SUBSYSTEM_INIT:
+  return "initializing the graphics subsystem";
+case GPU_INIT:
+  return "initializing the GPU device";
+case GPU_INIT_CMDBUF:
+  return "acquiring a command buffer for the GPU device";
+case GPU_WINDOW_CLAIM:
+  return "the GPU device was claiming its window";
+case SET_SWAPCHAIN_PARAMS:
+  return "setting parameters for the swapchain";
+case GET_WINDOW_SWAPCHAIN_TEXTURE:
+  return "getting the texture from the swapchain";
+})
 
-Error handle_event(Window &ctx, SDL_WindowEvent event);
+Error init(Graphics &ctx);
+Error attach_window(Graphics &ctx, Window &window);
+Error get_window_swapchain_texture(Graphics &ctx, Window &window, SDL_GPUTexture *output);
+} // namespace graphics
 
-// Raw pointer is only for interfacing with SDL
-SDL_Window *get_handle(Window &ctx);
-} // namespace window
-
-struct Window {
-  uint32_t m_width{}, m_height{};
-  bool m_resized{}, m_focused{}, m_ticking{};
-  std::shared_ptr<SDL_Window> m_handle;
-  std::string m_name;
+struct Graphics {
+  std::shared_ptr<SDL_GPUDevice> m_handle;
+  std::shared_ptr<SDL_GPUCommandBuffer> m_main_command_buffer;
 };
-using WindowError = window::Error;
+
+using GraphicsError = graphics::Error;
