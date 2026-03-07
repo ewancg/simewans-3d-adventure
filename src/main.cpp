@@ -4,22 +4,6 @@
 
 #ifndef UNIT_TESTING
 
-#define TICK_DIVISOR 1000000000.0
-#define TICK_INTERVAL_60FPS 16666667 // 16666667 is the nanoseconds per frame at 60 fps
-
-static double wait_frame_end(const uint64_t framewait, uint64_t &past) {
-  // screenUpdate(screen);
-
-  uint64_t now = SDL_GetTicksNS();
-  uint64_t frametime = now - past;
-  // printf("%u\n", frametime.count());
-
-  SDL_DelayPrecise(framewait - frametime);
-
-  past = now;
-  return static_cast<double>(framewait) / TICK_DIVISOR;
-}
-
 int main(int argc, char *argv[]) {
   (void)argc;
   (void)argv;
@@ -34,27 +18,30 @@ int main(int argc, char *argv[]) {
     std::quick_exit(1);
   };
 
-  Graphics graphics{};
-  Window window{.m_graphics = graphics, .m_name = "AwesomeSauce"};
-  Input input{.m_window = window};
+  auto graphics = Graphics();
+  auto window = Window();
+  auto input = Input(window);
 
-  graphics::init(graphics).map_err(fatal_error);
-  window::init(window).map_err(fatal_error);
-  input::init(input).map_err(fatal_error);
+  graphics.init().map_err(fatal_error);
+  window.init().map_err(fatal_error);
+  input.init().map_err(fatal_error);
 
-  graphics::attach_window(graphics, window).map_err(fatal_error);
+  graphics.attachWindow(window).map_err(fatal_error);
 
   // Now we can prepare static data like shaders, vertex buffers, textures, samplers, etc
-  window::show(window);
 
-  uint64_t past{};
+  SDL_GPUTexture *tex{};
+  graphics.getWindowSwapchainTexture(window, tex);
+
+  window.show();
   double last_frame_time{};
 
-  while (window.m_ticking) {
-    input::update(input).map_err(passive_error);
-    window::update(window).map_err(passive_error);
+  while (window.ticking()) {
+    graphics.beginFrame(tex).map_err(passive_error);
+    input.update().map_err(passive_error);
+    window.update().map_err(passive_error);
 
-    last_frame_time = wait_frame_end(TICK_INTERVAL_60FPS, past);
+    graphics.endFrame(TICK_INTERVAL_60FPS);
   }
 }
 

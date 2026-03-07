@@ -1,50 +1,40 @@
 #pragma once
-#include "graphics.h"
 
-#define WINDOW_START_WIDTH 960
-#define WINDOW_START_HEIGHT 540
+#define ERRORS(E)                                                                                  \
+  E(INIT, "initializing the window")                                                               \
+  E(SHOW, "showing the window")                                                                    \
+  E(HIDE, "hiding the window")
+DEFINE_ERROR_TYPES(Window, ERRORS);
+#undef ERRORS
 
-namespace window {
-enum class EError : uint8_t {
-  INIT = 0,
-  SHOW,
-  HIDE,
-};
+constexpr int WINDOW_START_WIDTH = 960;
+constexpr int WINDOW_START_HEIGHT = 540;
 
-ERROR_CONTEXT_TYPE({
-case INIT:
-  return "initializing the window";
-case SHOW:
-  return "showing the window";
-case HIDE:
-  return "hiding the window";
-})
+class Window : public Subsystem<WindowError> {
+  using Error = WindowError;
 
-/// Given a pre-populated m_graphics; create a window, have the GPU "claim" the window, create the swapchain connecting
-/// the two, and create the swapchain's texture
-Error init(Window &ctx);
+  DEFINE_PROPERTY(uint32_t, m_width, width, setWidth);
+  DEFINE_PROPERTY(uint32_t, m_height, height, setHeight);
 
-/// Show the window
-Error show(Window &ctx);
+  bool m_resized{}, m_focused{};
+  DEFINE_PROPERTY(bool, m_ticking, ticking, setTicking);
 
-/// Re-render the window
-Error update(Window &ctx);
-
-/// Hide the window
-Error hide(Window &ctx);
-
-/// Handle `SDL_WindowEvent`s
-Error handle_event(Window &ctx, SDL_WindowEvent event);
-
-// Raw pointer is only for interfacing with SDL
-SDL_Window *get_handle(Window &ctx);
-} // namespace window
-
-struct Window {
-  uint32_t m_width{}, m_height{};
-  bool m_resized{}, m_focused{}, m_ticking{};
   std::shared_ptr<SDL_Window> m_handle;
-  std::reference_wrapper<Graphics> m_graphics;
-  std::string m_name;
+  DEFINE_REF_PROPERTY(std::string, m_name, name, setName);
+
+public:
+  Error onInit();
+  Error onDestroy();
+  /// Show the window
+  Error show();
+  /// Close the window
+  Error close();
+  /// Demand focus on the window
+  Error raise();
+  /// Tick the window
+  Error update();
+  /// Process incoming `SDL_WindowEvent`s
+  Error event(const SDL_WindowEvent &event);
+  // Raw pointer is only for interfacing with SDL
+  SDL_Window *getRawHandle();
 };
-using WindowError = window::Error;

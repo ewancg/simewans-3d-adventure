@@ -2,22 +2,14 @@
 #include "window.h"
 #include <bitset>
 
-namespace input {
-enum class EError : uint8_t {
-  INIT = 0,
-  SUBSYSTEM_INIT,
-  UPDATE,
-  SET_MOUSE_POS,
-};
-ERROR_CONTEXT_TYPE({
-case SUBSYSTEM_INIT:
-  return "initializing input subsystem";
-case UPDATE:
-  return "processing input events";
-case SET_MOUSE_POS:
-  return "setting the mouse cursor position";
-})
-enum EMapping : uint8_t {
+#define ERRORS(E)                                                                                  \
+  E(SUBSYSTEM_INIT, "initializing input")                                                          \
+  E(EVENT, "processing input events")                                                              \
+  E(SET_MOUSE_POS, "setting the mouse cursor position")
+DEFINE_ERROR_TYPES(Input, ERRORS);
+#undef ERRORS
+
+enum EInputMapping : uint8_t {
   KEY_A = 0,
   KEY_B,
   KEY_C,
@@ -81,28 +73,53 @@ enum EMapping : uint8_t {
 
   LENGTH
 };
-struct MouseData {
-  float x, y;
-  float xm, ym;
-};
 
-Error init(Input &ctx);
-Error deinit(Input &ctx);
-Error update(Input &ctx);
-
-/// Checks if the input is currently down
-bool mapping_is_pressed(const Input &ctx, EMapping input);
-/// Checks if the input is currently down, and was not last frame
-bool mapping_newly_pressed(const Input &ctx, EMapping input);
-/// Sets the mouse cursor to an absolute position
-Error set_mouse_pos(Input &ctx, uint32_t x_pos, uint32_t y_pos);
-/// Centers the cursor within the screen
-Error center_mouse_pos(Input &ctx);
-} // namespace input
-struct Input {
-  input::MouseData m_mouse_data{};
-  std::bitset<input::EMapping::LENGTH> m_input_state{0};
-  std::bitset<input::EMapping::LENGTH> m_last_input_state{0};
+class Input : public Subsystem<InputError> {
+  using Error = InputError;
+  struct MouseData {
+    float x, y;
+    float xm, ym;
+  } m_mouse_data{};
+  std::bitset<EInputMapping::LENGTH> m_input_state{0};
+  std::bitset<EInputMapping::LENGTH> m_last_input_state{0};
   std::reference_wrapper<Window> m_window;
+
+  static bool getKeyState(const SDL_KeyboardEvent &event);
+  void handleKeyboardEvent(const SDL_KeyboardEvent &event);
+  void handleMouseButtonEvent(const SDL_MouseButtonEvent &event);
+  Error handleMouseEvent(const SDL_Event &event);
+
+public:
+  explicit Input(Window &window) : m_window(window) {}
+  Error onInit();
+  Error onDestroy();
+  Error update();
+
+  /// Checks if the input is currently down
+  bool mappingIsPressed(EInputMapping input);
+  /// Checks if the input is currently down, and was not last frame
+  bool mappingNewlyPressed(EInputMapping input);
+  /// Sets the mouse cursor to an absolute position
+  Error setMousePos(uint32_t x_pos, uint32_t y_pos);
+  /// Centers the cursor within the screen
+  Error centerMousePos();
 };
-using InputError = input::Error;
+
+// clang-format off
+#define INPUT_CASE(PREFIX, SDL_PREFIX, STATE, RHS, NAME)   \
+  case SDL_PREFIX##_##NAME:                                \
+    (STATE)[PREFIX##_##NAME] = (RHS);                      \
+    break;
+
+#define KB_INPUT_KEY_CASES(FN) \
+  FN(A) FN(B) FN(C) FN(D) FN(E) FN(F) FN(G) FN(H) FN(I) FN(J) FN(K) FN(L) FN(M) \
+  FN(N) FN(O) FN(P) FN(Q) FN(R) FN(S) FN(T) FN(U) FN(V) FN(W) FN(X) FN(Y) FN(Z) \
+  FN(0) FN(1) FN(2) FN(3) FN(4) FN(5) FN(6) FN(7) FN(8) FN(9)                \
+  FN(RETURN) FN(SPACE) FN(ESCAPE) FN(LEFT) FN(RIGHT) FN(UP) FN(DOWN)
+
+#define KB_INPUT_MODIFIER_CASES(FN) \
+  FN(LSHIFT) FN(LCTRL) FN(LALT) FN(RSHIFT) FN(RCTRL) FN(RALT)
+
+#define MOUSE_INPUT_BUTTON_CASES(FN) \
+  FN(LEFT) FN(MIDDLE) FN(RIGHT) FN(X1) FN(X2)
+// clang-format on
