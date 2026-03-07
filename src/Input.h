@@ -1,9 +1,9 @@
 #pragma once
-#include "window.h"
+#include "Window.h"
 #include <bitset>
 
 #define ERRORS(E)                                                                                  \
-  E(SUBSYSTEM_INIT, "initializing input")                                                          \
+  E(INIT, "initializing input")                                                                    \
   E(EVENT, "processing input events")                                                              \
   E(SET_MOUSE_POS, "setting the mouse cursor position")
 DEFINE_ERROR_TYPES(Input, ERRORS);

@@ -1,8 +1,8 @@
 #pragma once
-#include "window.h"
+#include "Window.h"
 
-#define GRAPHICS_ERRORS(E)                                                                         \
-  E(SUBSYSTEM_INIT, "initializing the graphics subsystem")                                         \
+#define ERRORS(E)                                                                                  \
+  E(INIT, "initializing the graphics subsystem")                                                   \
   E(GPU_INIT, "initializing the GPU device")                                                       \
   E(GPU_INIT_CMDBUF, "acquiring a command buffer for the GPU device")                              \
   E(GPU_WINDOW_CLAIM, "the GPU device was claiming its window")                                    \
@@ -10,7 +10,7 @@
   E(GET_WINDOW_SWAPCHAIN_TEXTURE, "getting the texture from the swapchain")                        \
   E(FRAME_BEGIN, "beginning a new frame")                                                          \
   E(FRAME_FINALIZE, "finishing a frame")
-DEFINE_ERROR_TYPES(Graphics, GRAPHICS_ERRORS);
+DEFINE_ERROR_TYPES(Graphics, ERRORS);
 #undef ERRORS
 
 class Graphics : public Subsystem<GraphicsError> {

@@ -1,7 +1,7 @@
-#include "graphics.h"
-#include "input.h"
-#include "window.h"
-
+#include "Audio.h"
+#include "Graphics.h"
+#include "Input.h"
+#include "Window.h"
 #ifndef UNIT_TESTING
 
 int main(int argc, char *argv[]) {
@@ -14,10 +14,13 @@ int main(int argc, char *argv[]) {
     std::println(stderr, "Error encountered while {}: {}", type_str, str);
   };
   static auto fatal_error = []<typename E>(E err) {
-    passive_error(err);
+    auto [type, str] = *err;
+    auto type_str = err.context();
+    std::println(stderr, "Unrecoverable error encountered while {}: {}", type_str, str);
     std::quick_exit(1);
   };
 
+  auto audio = Audio();
   auto graphics = Graphics();
   auto window = Window();
   auto input = Input(window);

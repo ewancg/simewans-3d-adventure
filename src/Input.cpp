@@ -1,4 +1,4 @@
-#include "input.h"
+#include "Input.h"
 using enum EInputError;
 using Error = InputError;
 
@@ -24,8 +24,8 @@ void Input::handleMouseButtonEvent(const SDL_MouseButtonEvent &event) {
 }
 
 Error Input::onInit() {
-  if (!SDL_InitSubSystem(SDL_INIT_EVENTS)) {
-    return {SUBSYSTEM_INIT, SDL_GetError()};
+  if (!SDL_InitSubSystem(SDL_INIT_EVENTS | SDL_INIT_GAMEPAD)) {
+    return {INIT, SDL_GetError()};
   }
   return {};
 }

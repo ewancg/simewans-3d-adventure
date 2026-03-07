@@ -27,7 +27,7 @@ function(create_main_executable TARGET)
     ${ARGN})
 
   unset(ROOT_SOURCES)
-  foreach(SRC main.cpp graphics.cpp window.cpp input.cpp)
+  foreach(SRC main.cpp Audio.cpp Graphics.cpp Input.cpp Window.cpp)
     list(APPEND ROOT_SOURCES "${CMAKE_SOURCE_DIR}/src/${SRC}")
   endforeach()
 
@@ -62,6 +62,7 @@ function(create_main_executable TARGET)
                             "${CMAKE_SOURCE_DIR}/src/common.h")
 endfunction()
 
+include(FetchContent)
 include(Sanitizers)
 find_package(SDL3 REQUIRED)
 

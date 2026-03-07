@@ -1,32 +1,21 @@
-
-#include "graphics.h"
-#include "window.h"
-#include <SDL3/SDL_gpu.h>
-
+#include "Graphics.h"
 using enum EGraphicsError;
+using Error = GraphicsError;
 
 #ifndef GRAPHICS_DEBUGGING
 #define GRAPHICS_DEBUGGING false
 #endif
 
-using Error = GraphicsError;
-
 Error Graphics::onInit() {
   if (!SDL_InitSubSystem(SDL_INIT_VIDEO)) {
-    return {SUBSYSTEM_INIT, SDL_GetError()};
+    return {INIT, SDL_GetError()};
   }
 
   auto *device = SDL_CreateGPUDevice(SDL_GPU_SHADERFORMAT_SPIRV | SDL_GPU_SHADERFORMAT_DXIL |
-                                         SDL_GPU_SHADERFORMAT_MSL,
+                                         SDL_GPU_SHADERFORMAT_METALLIB,
                                      GRAPHICS_DEBUGGING, nullptr);
   if (device == nullptr) {
     return {GPU_INIT, SDL_GetError()};
-  }
-  for (auto &command_buffer : m_command_buffers) {
-    command_buffer = SDL_AcquireGPUCommandBuffer(device);
-    if (command_buffer == nullptr) {
-      return {GPU_INIT_CMDBUF, SDL_GetError()};
-    }
   }
 
   m_device = std::shared_ptr<SDL_GPUDevice>(device, SDL_DestroyGPUDevice);
@@ -40,6 +29,13 @@ Error Graphics::onDestroy() {
 }
 
 Error Graphics::beginFrame(SDL_GPUTexture *tex) {
+  for (auto &command_buffer : m_command_buffers) {
+    command_buffer = SDL_AcquireGPUCommandBuffer(m_device.get());
+    if (command_buffer == nullptr) {
+      return {GPU_INIT_CMDBUF, SDL_GetError()};
+    }
+  }
+
   auto *cmd_buf = m_command_buffers[RENDER];
   if (cmd_buf == nullptr) {
     return {FRAME_BEGIN, "command buffer somehow invalidated"};

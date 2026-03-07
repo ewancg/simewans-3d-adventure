@@ -2,8 +2,10 @@
 #pragma once
 
 // IWYU pragma: begin_keep
+/// External
 #include <SDL3/SDL.h>
-
+#include <miniaudio/miniaudio.h>
+/// STL
 #include <memory>
 #include <optional>
 #include <print>
@@ -11,11 +13,10 @@
 #include <tuple>
 #include <utility>
 // IWYU pragma: end_keep
-
 /// ----- Trivial #defines -----
 
 #define TICK_DIVISOR 1000000000.0
-#define TICK_INTERVAL_60FPS 16666667 // 16666667 is the nanoseconds per frame at 60 fps
+#define TICK_INTERVAL_60FPS 16666667 // nanoseconds/frame @ 60fps
 
 /// ----- Common types and macros -----
 
@@ -78,7 +79,7 @@ public:
     using ErrorBase::ErrorBase;                                                                    \
     using ErrorBase::operator=;                                                                    \
     [[nodiscard]] constexpr std::string_view context() const {                                     \
-      using enum ENUM_NAME;                                                                        \
+      /* NOLINT(bugprone-macro-parentheses) */ using enum ENUM_NAME;                               \
       switch (std::get<0>(**this)) { BODY }                                                        \
     }                                                                                              \
   }
