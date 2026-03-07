@@ -159,6 +159,14 @@ rec {
           CompileFlags:
             Add: [ -DUNIT_TESTING, -Wno-unused-value, -Wno-comma ] # unused-value and comma warn about assert(("message", condition))
             CompilationDatabase: ${transientDirectories.testsBuild}
+
+          ---
+
+          If:
+            PathMatch: .*\.h
+
+          CompileFlags:
+            Add: [-xc-header]
         '';
       };
     in

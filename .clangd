@@ -12,7 +12,7 @@ Diagnostics:
       - misc-use-anonymous-namespace
       - modernize-use-trailing-return-type
 CompileFlags:
-  CompilationDatabase: .build
+  CompilationDatabase: .lsp-cache
   Add: [-Wno-unknown-warning-option]
   Remove: [-m*, -f*]
 
