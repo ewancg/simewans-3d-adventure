@@ -8,11 +8,10 @@
 , cmake
 , gcc
 , ninja
-, u-config
 , sdl3
 }:
 let buildInputs = [
-    sdl3
+    sdl3.dev
 ];
  in stdenv.mkDerivation
 {
@@ -21,7 +20,6 @@ let buildInputs = [
   nativeBuildInputs = [
     gcc
     cmake
-    u-config
     ninja
   ];
 

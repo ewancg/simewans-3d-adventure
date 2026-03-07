@@ -1,18 +1,20 @@
 #include "graphics.h"
 #include "input.h"
-
-#include <print>
-#include <stdio.h>
 #ifndef UNIT_TESTING
 
+#define TICK_DIVISOR 1000000000.0
+#define TICK_INTERVAL_60FPS 16666667 // 16666667 is the nanoseconds per frame at 60 fps
+
 // Start and End Frame Functions
-void start_frame(Window *screen) {
-  update_input(screen);
-  // screenClear();
-  return;
+static void start_frame(Window &window, Input &input) {
+  const auto error = input::update(input);
+  if (error) {
+    auto [type, msg] = error.value();
+    std::println(stderr, "Error while receiving new input: {}", msg);
+  }
 }
 
-float end_frame(uint64_t framewait, Window *screen) {
+static float end_frame(uint64_t framewait, Window &window) {
   static uint64_t past;
   // screenUpdate(screen);
 
@@ -23,27 +25,23 @@ float end_frame(uint64_t framewait, Window *screen) {
   SDL_DelayPrecise(framewait - frametime);
 
   past = now;
-  return (float)framewait / 1000000000.0;
+  return static_cast<float>(framewait) / TICK_DIVISOR;
 }
 
-#define WINDOW_START_WIDTH 960
-#define WINDOW_START_HEIGHT 540
-
 int main(int argc, char *argv[]) {
-  SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
+  auto ok = SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
 
-  Window window;
-  window.handle = NULL;
-  window.w = 960;
-  window.h = 540;
-  window.resized = false;
-  window.focused = true;
-  window.shouldquit = false;
-  window.handle = SDL_CreateWindow("AwesomeSauce", WINDOW_START_WIDTH, WINDOW_START_HEIGHT, 0 | SDL_WINDOW_RESIZABLE);
+  auto window = Window{.m_name = "AwesomeSauce"};
+  auto input = Input{.m_window = window}; // This is a reference
 
-  while (!window.shouldquit) {
-    start_frame(&window);
-    end_frame(16666667, &window); // 16666667 is the nanoseconds per frame at 60 fps
+  window::init(window);
+  input::init(input);
+
+  window::show(window);
+
+  while (window.m_ticking) {
+    start_frame(window, input);
+    end_frame(TICK_INTERVAL_60FPS, window);
   }
 }
 
