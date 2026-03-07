@@ -14,13 +14,13 @@ let
     # pkg = pkgs.writeShellScriptBin name (body name);
   });
   scripts = mkScripts {
-    sccache = name: ''
-      [ ! -d "$SCCACHE_DIR" ] && mkdir -p "$SCCACHE_DIR"
-      timeout "''${SCCACHE_CONNECTION_TIMEOUT:-10}" "${pkgs.sccache}/bin/sccache" "$@"
-      return=$?
-      [ $return -eq 124 ] && exec "$@"
-      exit $return
-    '';
+    # sccache = name: ''
+    #   [ ! -d "$SCCACHE_DIR" ] && mkdir -p "$SCCACHE_DIR"
+    #   timeout "''${SCCACHE_CONNECTION_TIMEOUT:-10}" "${pkgs.sccache}/bin/sccache" "$@"
+    #   return=$?
+    #   [ $return -eq 124 ] && exec "$@"
+    #   exit $return
+    # '';
     clean = name: '' # No arguments
         git clean -xdf
       '';
@@ -97,7 +97,7 @@ let
       OUTPUT_DIRNAME="$(dirname "$OUTPUT")"
       [ ! -d "$OUTPUT_DIRNAME" ] && mkdir -p "$OUTPUT_DIRNAME"
       BINARY="$(${scripts.run.pkg}/bin/run -q -c "$CONFIG" "$BINARY_NAME")"
-      ln "$BINARY" "$OUTPUT"
+      ln -s "$BINARY" "$OUTPUT"
     '';
     get-executable-wsl = name: ''
       BINARY_NAME="$1" && shift
@@ -277,6 +277,6 @@ in
   bat
   expect
   watchexec
-  sccache
+  # sccache
 ];
 }

@@ -15,9 +15,9 @@ rec {
     run = ".run";
   };
   env =
-    let
-      sccacheBin = "${scripts.scripts.sccache.pkg}/bin/sccache";
-    in
+    # let
+    #   sccacheBin = "${scripts.scripts.sccache.pkg}/bin/sccache";
+    # in
     [
       {
         PROJECT_ROOT = "$(realpath .)";
@@ -25,8 +25,8 @@ rec {
       {
         # C++
         CMAKE_GENERATOR = "'Ninja Multi-Config'";
-        CMAKE_C_COMPILER_LAUNCHER = "${sccacheBin}";
-        CMAKE_CXX_COMPILER_LAUNCHER = "${sccacheBin}";
+        # CMAKE_C_COMPILER_LAUNCHER = "${sccacheBin}";
+        # CMAKE_CXX_COMPILER_LAUNCHER = "${sccacheBin}";
 
         BUILD_DIR = "$PROJECT_ROOT/${transientDirectories.build}";
         TESTS_SRC_DIR = "$PROJECT_ROOT/tests";
@@ -47,8 +47,8 @@ rec {
 
         EDITOR_RUN_DIR = "$PROJECT_ROOT/${transientDirectories.run}";
 
-        SCCACHE_DIR = "$PROJECT_ROOT/${transientDirectories.sccache}";
-        SCCACHE_CACHE_SIZE = "${sccache.maxCacheSize}";
+        # SCCACHE_DIR = "$PROJECT_ROOT/${transientDirectories.sccache}";
+        # SCCACHE_CACHE_SIZE = "${sccache.maxCacheSize}";
       }
     ];
 

@@ -12,7 +12,7 @@ Diagnostics:
       - misc-use-anonymous-namespace
       - modernize-use-trailing-return-type
 CompileFlags:
-  CompilationDatabase: .lsp-cache
+  CompilationDatabase: .build
   Add: [-Wno-unknown-warning-option]
   Remove: [-m*, -f*]
 
@@ -23,4 +23,12 @@ If:
 CompileFlags:
   Add: [ -DUNIT_TESTING, -Wno-unused-value, -Wno-comma ] # unused-value and comma warn about assert(("message", condition))
   CompilationDatabase: .build-tests
+
+---
+
+If:
+  PathMatch: .*\.h
+
+CompileFlags:
+  Add: [-xc-header]
 
