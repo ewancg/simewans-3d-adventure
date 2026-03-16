@@ -18,7 +18,8 @@ concept IsSubsystemError = bool(std::is_base_of<SubsystemError, Error>());
 
 template <IsSubsystemError Error = SubsystemError> class Subsystem {
 private:
-  bool m_initialized{};
+  using enum ESubsystemError;
+  bool m_isInitialized{};
 
   std::vector<std::reference_wrapper<const std::function<Error()>>> m_pending_deletion_callbacks;
 
@@ -32,25 +33,60 @@ public:
   // uses "deducing this" to call the init callbacks on the real type for the current instance
 
   /// Populates a default-constructed instance (can error).
-  Error init(this auto &t_self);
+  Error init(this auto &t_self) {
+    if (auto error = t_self.onInit(); error) {
+      return error;
+    }
+    t_self.m_isInitialized = true;
+    return {};
+  }
+  bool isInitialized() { return m_isInitialized; };
 
   /// Destroys an instance (can error).
-  Error destroy(this auto &t_self);
+  Error destroy(this auto &t_self) {
+    t_self.m_isInitialized = false;
+    return t_self.onDestroy();
+  }
 
   /// Ticks an instance
-  Error update(this auto &t_self);
+  Error update(this auto &t_self) {
+    if (auto err = Subsystem::ensureInitialized<decltype(t_self), Error>(
+            t_self, "update called before initialization");
+        err) {
+      return err;
+    }
+    return t_self.onUpdate();
+    // Execute deferred deletions
+    auto batch = std::move(t_self.m_pending_deletion_callbacks);
+    for (auto &deleter : batch) {
+      auto err = deleter();
+      if (err) {
+        return {DELETE_AFTER_FRAME, err.string()};
+      }
+    }
+  }
 
   /// Protects against double deletes across varied contexts + allows us to assume every stateful
   /// object remains valid throughout the frame lifetime, even if something unrelated in the frame
   /// caused it to invalidate for future use. Saves us from having to delete it next frame by
   /// storing its validity state or checking the specific conditions under which it would be
   /// erroneous.
-
-  template <typename T> void deleteAfterFrame(std::unique_ptr<T> t_object);
-  template <typename T> void deleteAfterFrame(const std::function<void()> &t_deleterFn);
+  template <typename T, IsSubsystemError E>
+  void deleteAfterFrame(const std::function<E()> &t_deleterFn) {
+    static_assert(
+        std::has_virtual_destructor_v<T> || std::is_final_v<T>,
+        "A Subsystem cannot manage the lifetime of an item without a virtual destructor.");
+    m_pending_deletion_callbacks.push_back(std::reference_wrapper(t_deleterFn));
+  }
+  template <typename T> void deleteAfterFrame(std::unique_ptr<T> t_object) {
+    deleteAfterFrame(t_object.release());
+  }
 
   template <typename T, IsSubsystemError ForeignError>
-  static ForeignError ensureInitialized(T &t_self, std::string_view t_msg) noexcept;
-
-  bool initialized();
+  static ForeignError ensureInitialized(T &t_self, std::string_view t_msg) noexcept {
+    if (!t_self.m_isInitialized) {
+      return {ESubsystemError::ACCESS_WITHOUT_INIT, t_msg};
+    }
+    return {};
+  }
 };

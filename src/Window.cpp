@@ -23,6 +23,16 @@ Error Window::onInit() {
 }
 // NOLINTEND
 
+Error Window::onDestroy() { return {}; }
+
+Error Window::onUpdate() {
+  // i don't know what we would need to update here rn
+  // may remove method
+  return {};
+}
+
+// ----------
+
 Error Window::show() {
   if (!SDL_ShowWindow(getRawHandle())) {
     return {SHOW, SDL_GetError()};
@@ -43,12 +53,6 @@ Error Window::raise() {
   if (!SDL_RaiseWindow(getRawHandle())) {
     return {SHOW, SDL_GetError()};
   }
-  return {};
-}
-
-Error Window::onUpdate() {
-  // i don't know what we would need to update here rn
-  // may remove method
   return {};
 }
 

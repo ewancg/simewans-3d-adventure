@@ -1,7 +1,42 @@
 #include "Input.h"
+#include <SDL3/SDL_init.h>
 #include <cstdint>
 using enum EInputError;
 using Error = InputError;
+
+Error Input::onInit() {
+  if (!SDL_InitSubSystem(SDL_INIT_EVENTS | SDL_INIT_GAMEPAD)) {
+    return {INIT, SDL_GetError()};
+  }
+  return {};
+}
+
+Error Input::onDestroy() {
+  SDL_QuitSubSystem(SDL_INIT_EVENTS | SDL_INIT_GAMEPAD);
+  return {};
+}
+
+Error Input::onUpdate() {
+  auto window = m_window.get();
+  m_last_input_state = m_input_state;
+
+  SDL_Event event;
+  while (SDL_PollEvent(&event)) {
+    if (event.type == SDL_EVENT_QUIT) {
+      window.setTicking(false);
+    } else if (event.type >= SDL_EVENT_WINDOW_SHOWN && event.type <= SDL_EVENT_KEY_DOWN) {
+      window.event(event.window).mapError(logPassiveError);
+    } else if (event.type >= SDL_EVENT_KEY_DOWN && event.type <= SDL_EVENT_MOUSE_MOTION) {
+      handleKeyboardEvent(event.key);
+    } else if (event.type >= SDL_EVENT_MOUSE_MOTION &&
+               event.type <= SDL_EVENT_JOYSTICK_AXIS_MOTION) {
+      handleMouseEvent(event).mapError(logPassiveError);
+    }
+  }
+  return {};
+}
+
+// ----------
 
 bool Input::getKeyState(const SDL_KeyboardEvent &event) { return event.down || !event.repeat; };
 
@@ -22,13 +57,6 @@ void Input::handleMouseButtonEvent(const SDL_MouseButtonEvent &event) {
   default:
     break;
   }
-}
-
-Error Input::onInit() {
-  if (!SDL_InitSubSystem(SDL_INIT_EVENTS | SDL_INIT_GAMEPAD)) {
-    return {INIT, SDL_GetError()};
-  }
-  return {};
 }
 
 constexpr const char *MOUSE_POS_ERR_MSG =
@@ -92,28 +120,3 @@ Error Input::handleMouseEvent(const SDL_Event &event) {
   }
   return {};
 }
-
-Error Input::onUpdate() {
-  static const auto passive_error = [](auto err) {
-    auto [type, str] = *err;
-    auto type_str = err.context();
-    std::println(stderr, "Input: error while {}: {}", type_str, str);
-  };
-  auto window = m_window.get();
-  m_last_input_state = m_input_state;
-
-  SDL_Event event;
-  while (SDL_PollEvent(&event)) {
-    if (event.type == SDL_EVENT_QUIT) {
-      window.setTicking(false);
-    } else if (event.type >= SDL_EVENT_WINDOW_SHOWN && event.type <= SDL_EVENT_KEY_DOWN) {
-      window.event(event.window).mapError(passive_error);
-    } else if (event.type >= SDL_EVENT_KEY_DOWN && event.type <= SDL_EVENT_MOUSE_MOTION) {
-      handleKeyboardEvent(event.key);
-    } else if (event.type >= SDL_EVENT_MOUSE_MOTION &&
-               event.type <= SDL_EVENT_JOYSTICK_AXIS_MOTION) {
-      handleMouseEvent(event).mapError(passive_error);
-    }
-  }
-  return {};
-} // namespace input

@@ -78,9 +78,12 @@ enum EInputMapping : uint8_t {
 
 class Input : public Subsystem<InputError> {
 public:
-  using Error = InputError;
-
   explicit Input(Window &t_window) : m_window(t_window) {}
+
+  using Error = InputError;
+  Error onInit();
+  Error onDestroy();
+  Error onUpdate();
 
   /// Checks if the input is currently down
   bool mappingIsPressed(EInputMapping t_input);
@@ -90,11 +93,6 @@ public:
   Error setMousePos(uint32_t t_xPos, uint32_t t_yPos);
   /// Centers the cursor within the screen
   Error centerMousePos();
-
-protected:
-  Error onInit();
-  Error onDestroy();
-  Error onUpdate();
 
 private:
   struct MouseData {

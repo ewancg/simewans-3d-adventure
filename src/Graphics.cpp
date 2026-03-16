@@ -21,12 +21,15 @@ Error Graphics::onInit() {
 Error Graphics::onDestroy() {
   SDL_DestroyGPUDevice(m_device.get());
   // Explicitly do not free command buffers
+  SDL_QuitSubSystem(SDL_INIT_VIDEO);
   return {};
 }
 
 Error Graphics::onUpdate() { return {}; }
 
-Error Graphics::beginFrame(SDL_GPUTexture *tex) {
+// ----------
+
+Error Graphics::beginFrame(SDL_GPUTexture *t_textureOut) {
   //  if (auto err = (Subsystem::ensureInitialized)(&*this, "beginFrame called prematurely"); err) {
   //    return err;
   //  }
@@ -39,7 +42,7 @@ Error Graphics::beginFrame(SDL_GPUTexture *tex) {
   auto *commandBuf = m_commandBuffers[RENDER];
 
   // Setup and start a render pass
-  SDL_GPUColorTargetInfo targetInfo{.texture = tex,
+  SDL_GPUColorTargetInfo targetInfo{.texture = t_textureOut,
                                     .mip_level = 0,
                                     .layer_or_depth_plane = 0,
                                     .clear_color = {.r = 0.6F, .g = 0.2F, .b = 0.2F},

@@ -1,6 +1,10 @@
 #pragma once
 #include "Subsystem.h"
 
+#ifndef AUDIO_DEBUGGING
+#define AUDIO_DEBUGGING false
+#endif
+
 #define ERROR_ENTRIES(E)                                                                           \
   E(INIT, "initializing the audio subsystem")                                                      \
   E(DEVICE_INIT, "initializing the audio device")
@@ -12,8 +16,6 @@ DEFINE_DERIVED_ERROR_TYPES(Audio, ESubsystemError::END, SubsystemError, ESubsyst
 class Audio : public Subsystem<AudioError> {
 public:
   using Error = AudioError;
-
-protected:
   Error onInit();
   Error onDestroy();
   Error onUpdate();

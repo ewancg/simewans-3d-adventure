@@ -14,7 +14,7 @@ set(CMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES
 option(BUILD_TESTS "Build all test targets from src/ and tests/" OFF)
 
 function(create_main_executable TARGET)
-  # Parse arguments
+  # --- Setup
   if("${TARGET}" STREQUAL "")
     message(FATAL_ERROR "No TARGET provided to create_main_executable")
   endif()
@@ -28,39 +28,52 @@ function(create_main_executable TARGET)
                                                    # (list)
     ${ARGN})
 
-  unset(ROOT_SOURCES)
-  foreach(SRC main.cpp Subsystem.cpp Audio.cpp Graphics.cpp Input.cpp
-              Window.cpp)
-    list(APPEND ROOT_SOURCES "${CMAKE_SOURCE_DIR}/src/${SRC}")
-  endforeach()
-
   get_property(DEBUG_CONFIGS GLOBAL PROPERTY DEBUG_CONFIGURATIONS)
   if(CMAKE_BUILD_TYPE IN_LIST DEBUG_CONFIGS)
     set(OPTIMIZATION_LEVEL "-O1")
   endif()
 
-  set(TARGET_SOURCES ${ARG_SOURCES} ${ROOT_SOURCES})
-  set(LIBRARIES ${ARG_LIBRARIES} SDL3::Headers SDL3::SDL3)
-  set(DEFINES ${ARG_DEFINES})
-  set(INCLUDE_DIRS ${ARG_INCLUDE_DIRS} "${CMAKE_SOURCE_DIR}/include"
-                   "${CMAKE_SOURCE_DIR}/external")
-  set(FLAGS ${ARG_FLAGS} "${OPTIMIZATION_LEVEL}")
-  # March 2026 (twenty six!!!); Certain C++23 features are experimental in MinGW
-  if(WIN32 AND (MSYS OR MINGW))
-    list(APPEND LIBRARIES "stdc++exp")
-  endif()
+  # --- Create executable
+  unset(ROOT_SOURCES)
+  foreach(SRC #
+          main.cpp Application.cpp Audio.cpp Graphics.cpp Input.cpp Window.cpp)
+    list(APPEND ROOT_SOURCES "${CMAKE_SOURCE_DIR}/src/${SRC}")
+  endforeach()
+  add_executable("${TARGET}" ${ARG_SOURCES} ${ROOT_SOURCES})
 
-  add_executable("${TARGET}" ${TARGET_SOURCES})
-  target_include_directories("${TARGET}" PRIVATE ${INCLUDE_DIRS})
-  target_link_libraries("${TARGET}" PRIVATE ${LIBRARIES})
-  target_compile_definitions("${TARGET}" PRIVATE ${DEFINES})
+  # --- Populate include directories
+  target_include_directories(
+    "${TARGET}"
+    PRIVATE #
+            ${ARG_INCLUDE_DIRS} #
+            "${CMAKE_SOURCE_DIR}/include" "${CMAKE_SOURCE_DIR}/external")
+
+  # --- Link libraries
+
+  # March 2026 certain C++23 features are experimental in MinGW
+  if(WIN32 AND (MSYS OR MINGW))
+    list(APPEND ARG_LIBRARIES "stdc++exp")
+  endif()
+  target_link_libraries(
+    "${TARGET}"
+    PRIVATE #
+            ${ARG_LIBRARIES} #
+            SDL3::Headers SDL3::SDL3)
+  # --- Set #defines
+  target_compile_definitions(
+    "${TARGET}" PRIVATE #
+                        ${ARG_DEFINES} #
+  )
+
+  # --- Set non-define compile flags
+  set(FLAGS ${ARG_FLAGS} "${OPTIMIZATION_LEVEL}")
   target_compile_options("${TARGET}" PRIVATE ${FLAGS})
   target_link_options("${TARGET}" PRIVATE ${FLAGS})
+
+  # --- Finalize
   apply_sanitizers("${TARGET}")
-  set_target_properties(
-    "${TARGET}" PROPERTIES WIN32_EXECUTABLE ON #
-                           MACOSX_BUNDLE ON #
-  )
+  set_target_properties("${TARGET}" PROPERTIES WIN32_EXECUTABLE ON MACOSX_BUNDLE
+                                                                   ON)
   target_precompile_headers("${TARGET}" PUBLIC
                             "${CMAKE_SOURCE_DIR}/src/common.h")
 endfunction()

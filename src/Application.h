@@ -18,8 +18,9 @@ DEFINE_DERIVED_ERROR_TYPES(Application, ESubsystemError::END, SubsystemError, ES
 class Application : public Subsystem<ApplicationError> {
 public:
   using Error = ApplicationError;
-
-  // template <typename Error> static auto logPassiveError(Error t_err);
+  Error onInit();
+  Error onDestroy();
+  Error onUpdate();
 
 private:
   Audio m_audio{};
@@ -28,9 +29,4 @@ private:
   Input m_input = Input(m_window);
 
   DEFINE_PROPERTY(bool, m_isTicking, isTicking, setTicking, false);
-
-protected:
-  Error onInit();
-  Error onDestroy();
-  Error onUpdate();
 };

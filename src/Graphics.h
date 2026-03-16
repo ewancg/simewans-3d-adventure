@@ -22,6 +22,9 @@ DEFINE_DERIVED_ERROR_TYPES(Graphics, ESubsystemError::END, SubsystemError, ESubs
 class Graphics : public Subsystem<GraphicsError> {
 public:
   using Error = GraphicsError;
+  Error onInit();
+  Error onDestroy();
+  Error onUpdate();
 
   /// Begins render pass
   Error beginFrame(SDL_GPUTexture *t_textureOut);
@@ -32,11 +35,6 @@ public:
   Error attachWindow(Window &t_windowIn);
   /// Acquires the swapchain texture for direct rendering
   Error getWindowSwapchainTexture(Window &t_windowIn, SDL_GPUTexture *t_textureOut);
-
-protected:
-  Error onInit();
-  Error onDestroy();
-  Error onUpdate();
 
 private:
   enum ECommandBufferRole : uint8_t { RENDER = 0, LENGTH };

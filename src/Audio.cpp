@@ -4,5 +4,7 @@ using enum EAudioError;
 using Error = AudioError;
 
 Error Audio::onInit() { return {}; }
-
 Error Audio::onDestroy() { return {}; }
+Error Audio::onUpdate() { return {}; }
+
+// ----------
