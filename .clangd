@@ -9,8 +9,30 @@ Diagnostics:
       - altera-*
       - abseil-*
       - boost-*
-      - misc-use-anonymous-namespace
-      - modernize-use-trailing-return-type
+      - "*-use-anonymous-namespace"
+      - "*-use-trailing-return-type"
+      - "*-named-parameter"
+    CheckOptions:
+      readability-identifier-naming.IgnoreNamespaces: std
+      readability-identifier-naming.ClassCase: CamelCase
+      readability-identifier-naming.StructCase: CamelCase
+      readability-identifier-naming.UnionCase: CamelCase
+      readability-identifier-naming.EnumCase: CamelCase
+      readability-identifier-naming.FunctionCase: camelBack
+      readability-identifier-naming.VariableCase: camelBack
+      readability-identifier-naming.ParameterCase: camelBack
+      readability-identifier-naming.ParameterPrefix: t_
+      readability-identifier-naming.MacroDefinitionCase: UPPER_CASE
+      readability-identifier-naming.EnumConstantCase: UPPER_CASE
+      readability-identifier-naming.TypeTemplateParamCase: CamelCase
+      readability-identifier-naming.ValueTemplateParamCase: CamelCase
+      readability-identifier-naming.GlobalConstantCase: camelBack
+      readability-identifier-naming.StaticConstantCase: camelBack
+      readability-identifier-naming.MemberConstantCase: camelBack
+      readability-identifier-naming.ConstexprVariableCase: camelBack
+      readability-identifier-naming.ConstantCase: camelBack
+      readability-identifier-naming.ConstexprFunctionCase: camelBack
+      readability-identifier-naming.ConstexprMethodCase: camelBack
 CompileFlags:
   CompilationDatabase: .build
   Add: [-Wno-unknown-warning-option]
@@ -30,5 +52,5 @@ If:
   PathMatch: .*\.h
 
 CompileFlags:
-  Add: [-xc-header]
+  Add: [-xc++-header]
 

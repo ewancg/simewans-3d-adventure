@@ -133,7 +133,7 @@ rec {
               };
             };
           };
-        ".clangd" = ''
+        ".clangd" = let naming = "readability-identifier-naming"; in ''
           Diagnostics:
             ClangTidy:
               Add:
@@ -145,8 +145,31 @@ rec {
                 - altera-*
                 - abseil-*
                 - boost-*
-                - misc-use-anonymous-namespace
-                - modernize-use-trailing-return-type
+                - "*-use-anonymous-namespace"
+                - "*-use-trailing-return-type"
+                - "*-named-parameter"
+                - "*-isolate-declaration"
+              CheckOptions:
+                ${naming}.IgnoreNamespaces: std
+                ${naming}.ClassCase: CamelCase
+                ${naming}.StructCase: CamelCase
+                ${naming}.UnionCase: CamelCase
+                ${naming}.EnumCase: CamelCase
+                ${naming}.FunctionCase: camelBack
+                ${naming}.VariableCase: camelBack
+                ${naming}.ParameterCase: camelBack
+                ${naming}.ParameterPrefix: t_
+                ${naming}.MacroDefinitionCase: UPPER_CASE
+                ${naming}.EnumConstantCase: UPPER_CASE
+                ${naming}.TypeTemplateParamCase: CamelCase
+                ${naming}.ValueTemplateParamCase: CamelCase
+                ${naming}.GlobalConstantCase: camelBack
+                ${naming}.StaticConstantCase: camelBack
+                ${naming}.MemberConstantCase: camelBack
+                ${naming}.ConstexprVariableCase: camelBack
+                ${naming}.ConstantCase: camelBack
+                ${naming}.ConstexprFunctionCase: camelBack
+                ${naming}.ConstexprMethodCase: camelBack
           CompileFlags:
             CompilationDatabase: ${transientDirectories.build}
             Add: [-Wno-unknown-warning-option]
@@ -166,7 +189,7 @@ rec {
             PathMatch: .*\.h
 
           CompileFlags:
-            Add: [-xc-header]
+            Add: [-xc++-header]
         '';
       };
     in

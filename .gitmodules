@@ -1,3 +1,6 @@
 [submodule "external/miniaudio"]
 	path = external/miniaudio
 	url = https://github.com/mackron/miniaudio
+[submodule "external/GSL"]
+	path = external/GSL
+	url = https://github.com/Microsoft/GSL

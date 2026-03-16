@@ -1,129 +1,119 @@
-// #define DEFINE_ERROR_ENUM_ENTRY(name, msg) name,
-//
-// #define DEFINE_ERROR_CONTEXT_CASE(ENUM_NAMEname, msg) \
-//   case E##NAME##Error::(name): \
-//     return msg;
-//
-// #define DEFINE_ERROR_TYPES(NAME, BASE_TYPE, START, ERRORS_LIST) \
-//   enum class E##NAME##Error : BASE_TYPE{_FIRST = (START), /* forces dynamic starting index */ \
-//                                         ERRORS_LIST(DEFINE_ERROR_ENUM_ENTRY) UNKNOWN}; \
-//                                                                                                    \
-//   class NAME##Error final : public ErrorBase<E##NAME##Error> { \
-//   public: \
-//     using Enum = E##NAME##Error; \
-//     using Base = ErrorBase<Enum>; \
-//     using Base::Base; \
-//     using Base::operator=; \
-//     using Base::operator*; \
-//     using Base::operator bool; \
-//                                                                                                    \
-//     constexpr std::string_view context(this const auto &self) noexcept { \
-//       if (!self) \
-//         return ""; \
-//       auto [err, msg] = *self; \
-//       auto code = std::to_underlying(err); \
-//                                                                                                    \
-//       /* Inherited errors (< START) delegate to SubsystemError::context() */ \
-//       if (code < (START)) { \
-//         SubsystemError base_err{static_cast<ESubsystemError>(code), msg}; \
-//         return base_err.context(); \
-//       } \
-//                                                                                                    \
-//       switch (err) { \
-//       case Enum::UNKNOWN: \
-//         return "unknown " #NAME " error"; \
-//         ERRORS_LIST(DEFINE_ERROR_CONTEXT_CASE) \
-//       default: \
-//         return "unknown " #NAME " error"; \
-//       } \
-//     } \
-//   };
+// ----- Private -----
 
-#define DEFINE_ERROR_ENUM_ENTRY(name, msg) name,
-#define DEFINE_ERROR_CONTEXT_CASE(name, msg)                                                       \
-  case E##NAME##Error::name:                                                                       \
-    return msg;
-#define ERROR_CONTEXT_TYPE_NAMED(ENUM_NAME, CONTEXT_NAME, BASE_TYPE, BODY)                         \
-  struct CONTEXT_NAME : public ErrorBase<ENUM_NAME> {                                              \
+// Error construction macros
+
+#define _ERROR_ENUM_NAME(NAME) E##NAME##Error
+#define _ERROR_ENUM_ENTRY(CONSTANT, MSG) CONSTANT,
+#define _DEFINE_ERROR_ENUM_TYPE(NAME, START_INDEX, ENTRIES)                                        \
+  enum class _ERROR_ENUM_NAME(NAME) : uint8_t {                                                    \
+    START = uint8_t(START_INDEX),                                                                  \
+    ENTRIES(_ERROR_ENUM_ENTRY) UNKNOWN,                                                            \
+    END                                                                                            \
+  };
+
+#define _ERROR_CONTEXT_NAME(NAME) NAME##Error
+#define _ERROR_CONTEXT_CASE(CONSTANT, MSG)                                                         \
+  case Enum::CONSTANT:                                                                             \
+    return MSG;
+
+#define _DEFINE_BASE_ERROR_CONTEXT_TYPE(NAME, ENTRIES)                                             \
+  struct _ERROR_CONTEXT_NAME(NAME) : public ErrorBase<_ERROR_ENUM_NAME(NAME)> {                    \
+    using Enum = _ERROR_ENUM_NAME(NAME);                                                           \
     using ErrorBase::ErrorBase;                                                                    \
     using ErrorBase::operator=;                                                                    \
-    [[nodiscard]] constexpr std::string_view context() const {                                     \
-      /* NOLINT(bugprone-macro-parentheses) */ using enum ENUM_NAME;                               \
-      const auto value = std::get<0>(**this);                                                      \
-      if (value < UNKNOWN) {                                                                       \
-        return BASE_TYPE::context();                                                               \
+    [[nodiscard]] constexpr std::string_view context(this auto &self) {                            \
+      if (!self) {                                                                                 \
+        return "";                                                                                 \
       }                                                                                            \
-      switch (value) { BODY }                                                                      \
+      const auto value = std::to_underlying(std::get<0>(*self));                                   \
+      const auto &msg = std::get<1>(*self);                                                        \
+      switch (static_cast<Enum>(value)) {                                                          \
+        ENTRIES(_ERROR_CONTEXT_CASE)                                                               \
+      case Enum::UNKNOWN:                                                                          \
+        return "unknown " #NAME " error";                                                          \
+      default:                                                                                     \
+        return "unknown " #NAME " error";                                                          \
+      }                                                                                            \
     }                                                                                              \
-  }
+  };
 
-#define ERROR_ENUM_ENTRY(name, str) name,
-#define ERROR_CONTEXT_ENTRY(name, str)                                                             \
-  case name:                                                                                       \
-    return str;
+#define _DEFINE_DERIVED_ERROR_CONTEXT_TYPE(NAME, START_INDEX, BASE_ERROR_TYPE, BASE_ENUM_TYPE,     \
+                                           ENTRIES)                                                \
+  struct _ERROR_CONTEXT_NAME(NAME) : public BASE_ERROR_TYPE {                                      \
+    using Enum = _ERROR_ENUM_NAME(NAME);                                                           \
+    using BASE_ERROR_TYPE::BASE_ERROR_TYPE;                                                        \
+    using BASE_ERROR_TYPE::operator=;                                                              \
+    [[nodiscard]] constexpr std::string_view context(this auto &self) {                            \
+      if (!self) {                                                                                 \
+        return "";                                                                                 \
+      }                                                                                            \
+      const auto value = std::to_underlying(std::get<0>(*self));                                   \
+      const auto &msg = std::get<1>(*self);                                                        \
+      if (value < uint8_t(START_INDEX)) {                                                          \
+        BASE_ERROR_TYPE base_err{static_cast<BASE_ENUM_TYPE>(value), msg};                         \
+        return base_err.context();                                                                 \
+      }                                                                                            \
+      switch (static_cast<Enum>(value)) {                                                          \
+        ENTRIES(_ERROR_CONTEXT_CASE)                                                               \
+      case Enum::UNKNOWN:                                                                          \
+        return "unknown " #NAME " error";                                                          \
+      default:                                                                                     \
+        return "unknown " #NAME " error";                                                          \
+      }                                                                                            \
+    }                                                                                              \
+  };
 
-#define DEFINE_ERROR_TYPES(NAME, START, BASE_TYPE, ENTRIES)                                        \
-  enum class E##NAME##Error : BASE_TYPE {                                                          \
-    UNKNOWN = (START);                                                                             \
-    ENTRIES(ERROR_ENUM_ENTRY)                                                                      \
-  };                                                                                               \
-  ERROR_CONTEXT_TYPE_NAMED(E##NAME##Error, NAME##Error, BASE_TYPE, {ENTRIES(ERROR_CONTEXT_ENTRY)})
-
-#define DEFINE_PROPERTY_COMMON(TYPE, NAME, DEFAULT)                                                \
+// Property definition items
+#define _DEFINE_PROPERTY_COMMON(TYPE, NAME, DEFAULT)                                               \
 private:                                                                                           \
   TYPE NAME = DEFAULT;
 
-// #define DEFINE_PROPERTY(TYPE, NAME, GETTER, SETTER) \
-//   DEFINE_PROPERTY_COMMON(TYPE, NAME) \
-// public: \
-//   [[nodiscard]] TYPE GETTER() const { return NAME; } \
-//   void SETTER(TYPE val) { (NAME) = val; } \
-//                                                                                                    \
-// private:
-//
-// #define DEFINE_REF_PROPERTY(TYPE, NAME, GETTER, SETTER) \
-//   DEFINE_PROPERTY_COMMON(TYPE, NAME) \
-// public: \
-//   [[nodiscard]] const TYPE &GETTER() const { return NAME; } \
-//   void SETTER(const TYPE &val) { (NAME) = val; } \
-//                                                                                                    \
-// private:
-
-#define ASSERT_PROPERTY_INIT(NAME, ERROR_FUNCTION)                                                 \
-  if (!m_initialized) {                                                                            \
-    return ERROR_FUNCTION(NAME);                                                                   \
-  }
-
-#define DEFINE_GETTER(TYPE, NAME, GETTER, OPERATION)                                               \
-  Error GETTER(this auto &self, TYPE out) {                                                        \
-    if (auto err = self.ensureInitialized("property " #NAME " read prematurely"); err) {           \
+#define _DEFINE_GETTER(TYPE, NAME, GETTER, OPERATION)                                              \
+  Error GETTER(this auto &t_self, TYPE &t_out) {                                                   \
+    if (Error err = Subsystem::ensureInitialized<decltype(t_self), Error>(                         \
+            t_self, "property " #NAME " read prematurely");                                        \
+        err) {                                                                                     \
       return err;                                                                                  \
     }                                                                                              \
-    out = (OPERATION);                                                                             \
+    t_out = OPERATION(t_self.NAME);                                                                \
     return {};                                                                                     \
   }
-/*  const setter input = forced copy, no need */
-#define DEFINE_SETTER(TYPE, NAME, SETTER, OPERATION)                                               \
-  Error SETTER(this auto &self, TYPE val) {                                                        \
-    if (auto err = self.ensureInitialized("property " #NAME " set prematurely"); err) {            \
+/* const setter input = forced copy, no need */
+#define _DEFINE_SETTER(TYPE, NAME, SETTER, OPERATION)                                              \
+  Error SETTER(this auto &t_self, TYPE t_val) {                                                    \
+    if (Error err = Subsystem::ensureInitialized<decltype(t_self), Error>(                         \
+            t_self, "property " #NAME " set prematurely");                                         \
+        err) {                                                                                     \
       return err;                                                                                  \
     }                                                                                              \
-    (NAME) = (OPERATION);                                                                          \
+    t_self.NAME = OPERATION(t_val);                                                                \
     return {};                                                                                     \
   }
 
+/// ----- Public -----
+
+// Error construction macros
+#define DEFINE_BASE_ERROR_TYPES(NAME, ENTRIES)                                                     \
+  _DEFINE_ERROR_ENUM_TYPE(NAME, 0, ENTRIES)                                                        \
+  _DEFINE_BASE_ERROR_CONTEXT_TYPE(NAME, ENTRIES)
+
+#define DEFINE_DERIVED_ERROR_TYPES(NAME, START, BASE_ERROR_TYPE, BASE_ENUM_TYPE, ENTRIES)          \
+  _DEFINE_ERROR_ENUM_TYPE(NAME, START, ENTRIES)                                                    \
+  _DEFINE_DERIVED_ERROR_CONTEXT_TYPE(NAME, START, BASE_ERROR_TYPE, BASE_ENUM_TYPE, ENTRIES)
+
+// Property definition macros
 #define DEFINE_PROPERTY(TYPE, NAME, GETTER, SETTER, DEFAULT)                                       \
+  /* NOLINTBEGIN(*-magic-numbers) */                                                               \
 public:                                                                                            \
-  DEFINE_GETTER(WEAK_REF(TYPE), NAME, GETTER, NAME)                                                \
-  DEFINE_SETTER(TYPE NAME SETTER val)                                                              \
-private:                                                                                           \
-  DEFINE_PROPERTY_COMMON(TYPE, NAME, DEFAULT)
+  _DEFINE_GETTER(TYPE, NAME, GETTER, )                                                             \
+  _DEFINE_SETTER(TYPE, NAME, SETTER, )                                                             \
+  _DEFINE_PROPERTY_COMMON(TYPE, NAME, DEFAULT)
+/* NOLINTEND(*-magic-numbers) */
 
-#define WEAK_REF std::optional<std::reference_wrapper<TYPE>>
+#define WEAK_REF(TYPE) std::optional<std::reference_wrapper<TYPE>>
 
 #define DEFINE_REF_PROPERTY(TYPE, NAME, GETTER, SETTER, DEFAULT)                                   \
 public:                                                                                            \
-  DEFINE_GETTER(WEAK_REF(TYPE), NAME, GETTER, std::cref((NAME).value()))                           \
-  DEFINE_SETTER(TYPE, NAME, SETTER, std::move(val))                                                \
-private:                                                                                           \
-  DEFINE_PROPERTY_COMMON(WEAK_REF(TYPE), NAME, DEFAULT)
+  _DEFINE_GETTER(TYPE, NAME, GETTER, std::ref)                                                     \
+  _DEFINE_SETTER(TYPE, NAME, SETTER, std::move)                                                    \
+  _DEFINE_PROPERTY_COMMON(TYPE, NAME, DEFAULT)

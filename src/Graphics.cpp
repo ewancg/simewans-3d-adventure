@@ -2,10 +2,6 @@
 using enum EGraphicsError;
 using Error = GraphicsError;
 
-#ifndef GRAPHICS_DEBUGGING
-#define GRAPHICS_DEBUGGING false
-#endif
-
 Error Graphics::onInit() {
   if (!SDL_InitSubSystem(SDL_INIT_VIDEO)) {
     return {INIT, SDL_GetError()};
@@ -28,51 +24,54 @@ Error Graphics::onDestroy() {
   return {};
 }
 
+Error Graphics::onUpdate() { return {}; }
+
 Error Graphics::beginFrame(SDL_GPUTexture *tex) {
-  for (auto &command_buffer : m_command_buffers) {
-    command_buffer = SDL_AcquireGPUCommandBuffer(m_device.get());
-    if (command_buffer == nullptr) {
+  //  if (auto err = (Subsystem::ensureInitialized)(&*this, "beginFrame called prematurely"); err) {
+  //    return err;
+  //  }
+  for (auto &item : m_commandBuffers) {
+    item = SDL_AcquireGPUCommandBuffer(m_device.get());
+    if (item == nullptr) {
       return {GPU_INIT_CMDBUF, SDL_GetError()};
     }
   }
-
-  auto *cmd_buf = m_command_buffers[RENDER];
-  if (cmd_buf == nullptr) {
-    return {FRAME_BEGIN, "command buffer somehow invalidated"};
-  }
+  auto *commandBuf = m_commandBuffers[RENDER];
 
   // Setup and start a render pass
-  SDL_GPUColorTargetInfo target_info{.texture = tex,
-                                     .mip_level = 0,
-                                     .layer_or_depth_plane = 0,
-                                     .clear_color = {.r = 0.6F, .g = 0.2F, .b = 0.2F},
-                                     .load_op = SDL_GPU_LOADOP_CLEAR,
-                                     .store_op = SDL_GPU_STOREOP_STORE,
-                                     .cycle = false};
-  m_render_pass = SDL_BeginGPURenderPass(cmd_buf, &target_info, 1, nullptr);
+  SDL_GPUColorTargetInfo targetInfo{.texture = tex,
+                                    .mip_level = 0,
+                                    .layer_or_depth_plane = 0,
+                                    .clear_color = {.r = 0.6F, .g = 0.2F, .b = 0.2F},
+                                    .load_op = SDL_GPU_LOADOP_CLEAR,
+                                    .store_op = SDL_GPU_STOREOP_STORE,
+                                    .cycle = false};
+  m_renderPass = SDL_BeginGPURenderPass(commandBuf, &targetInfo, 1, nullptr);
   return {};
 }
-double Graphics::endFrame(uint64_t frame_interval) {
-  SDL_EndGPURenderPass(m_render_pass);
+Error Graphics::endFrame(double &t_frameTimeOut) {
+  SDL_EndGPURenderPass(m_renderPass);
 
-  for (const auto &item : m_command_buffers) {
-    SDL_SubmitGPUCommandBuffer(item);
+  for (const auto &item : m_commandBuffers) {
+    if (auto err = SDL_SubmitGPUCommandBuffer(item); err) {
+      return {FRAME_FINALIZE, SDL_GetError()};
+    }
   }
 
   uint64_t now = SDL_GetTicksNS();
-  uint64_t frametime = now - m_last_time;
-  // printf("%u\n", frametime.count());
+  uint64_t frameTime = now - m_lastFrameTime;
 
-  SDL_DelayPrecise(frame_interval - frametime);
+  SDL_DelayPrecise(static_cast<uint64_t>(m_frameIntervalNS) - frameTime);
 
-  m_last_time = now;
-  m_render_pass = nullptr;
-  return static_cast<double>(frame_interval) / TICK_DIVISOR;
+  m_lastFrameTime = now;
+  t_frameTimeOut = m_frameIntervalNS / NS_PER_SEC;
+  m_renderPass = nullptr;
+  return {};
 }
 
-Error Graphics::attachWindow(Window &window) {
+Error Graphics::attachWindow(Window &t_windowIn) {
   auto *gpu = m_device.get();
-  auto *win = window.getRawHandle();
+  auto *win = t_windowIn.getRawHandle();
 
   if (!SDL_ClaimWindowForGPUDevice(gpu, win)) {
     return {GPU_WINDOW_CLAIM, SDL_GetError()};
@@ -84,21 +83,27 @@ Error Graphics::attachWindow(Window &window) {
   return {};
 }
 
-#define BAD_CALL(MSG)                                                                              \
-  {GET_WINDOW_SWAPCHAIN_TEXTURE, "graphics::get_swapchain_texture called without a " MSG}
-Error Graphics::getWindowSwapchainTexture(Window &window, SDL_GPUTexture *output) {
-  auto *cmd_buf = m_command_buffers[ECommandBufferRole::RENDER];
-  if (cmd_buf == nullptr) {
-    return BAD_CALL("rendering command buffer");
+// template <typename T>
+// concept IsEError = std::is_base_of<uint8_t, T>();
+// template <IsEError T>
+
+template <typename T = Error> static constexpr T badCall(const std::string &t_msg) {
+  return {GET_WINDOW_SWAPCHAIN_TEXTURE,
+          "graphics::get_swapchain_texture called without a " + t_msg};
+}
+Error Graphics::getWindowSwapchainTexture(Window &t_windowIn, SDL_GPUTexture *t_textureOut) {
+  auto *commandBuf = m_commandBuffers[ECommandBufferRole::RENDER];
+  if (commandBuf == nullptr) {
+    return badCall("rendering command buffer");
   }
-  if (output == nullptr) {
-    return BAD_CALL("destination texture");
+  if (t_textureOut == nullptr) {
+    return badCall("destination texture");
   }
-  auto *win = window.getRawHandle();
-  if (win == nullptr) {
-    return BAD_CALL("subject window");
+  auto *window = t_windowIn.getRawHandle();
+  if (window == nullptr) {
+    return badCall("subject window");
   }
-  if (!SDL_WaitAndAcquireGPUSwapchainTexture(cmd_buf, win, &output, nullptr, nullptr)) {
+  if (!SDL_WaitAndAcquireGPUSwapchainTexture(commandBuf, window, &t_textureOut, nullptr, nullptr)) {
     return {GET_WINDOW_SWAPCHAIN_TEXTURE, SDL_GetError()};
   }
   return {};

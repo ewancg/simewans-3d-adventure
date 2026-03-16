@@ -1,3 +1,4 @@
+#define MINIAUDIO_IMPLEMENTATION
 #include "Audio.h"
 using enum EAudioError;
 using Error = AudioError;

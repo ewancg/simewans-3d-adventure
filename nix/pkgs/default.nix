@@ -11,7 +11,7 @@
 , sdl3
 }:
 let buildInputs = [
-    sdl3.dev
+  sdl3.dev
 ];
  in stdenv.mkDerivation
 {

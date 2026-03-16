@@ -46,32 +46,32 @@ Error Window::raise() {
   return {};
 }
 
-Error Window::update() {
+Error Window::onUpdate() {
   // i don't know what we would need to update here rn
   // may remove method
   return {};
 }
 
-Error Window::move(uint32_t x_pos, uint32_t y_pos) {
-  m_x_pos = x_pos;
-  m_y_pos = y_pos;
-  if (!SDL_SetWindowPosition(getRawHandle(), static_cast<int>(x_pos), static_cast<int>(y_pos))) {
+Error Window::move(uint32_t t_xPos, uint32_t t_yPos) {
+  m_x_pos = t_xPos;
+  m_y_pos = t_yPos;
+  if (!SDL_SetWindowPosition(getRawHandle(), static_cast<int>(t_xPos), static_cast<int>(t_yPos))) {
     return {MOVE, SDL_GetError()};
   }
   return {};
 }
 
-Error Window::resize(uint32_t width, uint32_t height) {
-  setWidth(width);
-  setHeight(height);
+Error Window::resize(uint32_t t_width, uint32_t t_height) {
+  setWidth(t_width);
+  setHeight(t_height);
   if (!SDL_SetWindowSize(getRawHandle(), static_cast<int>(m_width), static_cast<int>(m_height))) {
     return {RESIZE, SDL_GetError()};
   }
   return {};
 }
 
-Error Window::event(const SDL_WindowEvent &event) {
-  switch (event.type) {
+Error Window::event(const SDL_WindowEvent &t_event) {
+  switch (t_event.type) {
   case SDL_EVENT_WINDOW_FOCUS_LOST:
     m_focused = false;
     break;
@@ -79,8 +79,8 @@ Error Window::event(const SDL_WindowEvent &event) {
     m_focused = true;
     break;
   case SDL_EVENT_WINDOW_RESIZED:
-    m_width = event.data1;
-    m_height = event.data2;
+    m_width = t_event.data1;
+    m_height = t_event.data2;
     // glViewport(0, 0, ctx.width, ctx.height);
     m_resized = true;
     break;

@@ -1,31 +1,25 @@
 #pragma once
+#include "Subsystem.h"
 
-#define ERRORS(E)                                                                                  \
+#define ERROR_ENTRIES(E)                                                                           \
   E(INIT, "initializing the window")                                                               \
   E(SHOW, "showing the window")                                                                    \
   E(HIDE, "hiding the window")                                                                     \
   E(MOVE, "moving the window")                                                                     \
   E(RESIZE, "resizing the window")
-DEFINE_ERROR_TYPES(Window, ERRORS);
-#undef ERRORS
+DEFINE_DERIVED_ERROR_TYPES(Window, ESubsystemError::END, SubsystemError, ESubsystemError,
+                           ERROR_ENTRIES);
+#undef ERROR_ENTRIES
 
 constexpr int WINDOW_START_WIDTH = 960;
 constexpr int WINDOW_START_HEIGHT = 540;
 
 class Window : public Subsystem<WindowError> {
+public:
   using Error = WindowError;
 
-  uint32_t m_x_pos{}, m_y_pos{};
-  DEFINE_PROPERTY(uint32_t, m_width, width, setWidth);
-  DEFINE_PROPERTY(uint32_t, m_height, height, setHeight);
+  using Mama = Subsystem<Error>;
 
-  bool m_resized{}, m_focused{};
-  DEFINE_PROPERTY(bool, m_ticking, ticking, setTicking);
-
-  std::shared_ptr<SDL_Window> m_handle;
-  DEFINE_REF_PROPERTY(std::string, m_name, name, setName);
-
-public:
   Error onInit();
   Error onDestroy();
   /// Show the window
@@ -35,7 +29,7 @@ public:
   /// Demand focus on the window
   Error raise();
   /// Tick the window
-  Error update();
+  Error onUpdate();
   /// Move the window
   Error move(uint32_t x_pos, uint32_t y_pos);
   /// Resize the window
@@ -44,4 +38,15 @@ public:
   Error event(const SDL_WindowEvent &event);
   // Raw pointer is only for interfacing with SDL
   SDL_Window *getRawHandle();
+
+private:
+  uint32_t m_x_pos{}, m_y_pos{};
+  DEFINE_PROPERTY(uint32_t, m_width, getWidth, setWidth, 0);
+  DEFINE_PROPERTY(uint32_t, m_height, getHeight, setHeight, 0);
+
+  bool m_resized{}, m_focused{};
+  DEFINE_PROPERTY(bool, m_ticking, getTicking, setTicking, {});
+
+  std::shared_ptr<SDL_Window> m_handle;
+  DEFINE_REF_PROPERTY(std::string, m_name, getName, setName, {});
 };

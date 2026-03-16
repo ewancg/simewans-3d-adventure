@@ -29,7 +29,8 @@ function(create_main_executable TARGET)
     ${ARGN})
 
   unset(ROOT_SOURCES)
-  foreach(SRC main.cpp Audio.cpp Graphics.cpp Input.cpp Window.cpp)
+  foreach(SRC main.cpp Subsystem.cpp Audio.cpp Graphics.cpp Input.cpp
+              Window.cpp)
     list(APPEND ROOT_SOURCES "${CMAKE_SOURCE_DIR}/src/${SRC}")
   endforeach()
 
