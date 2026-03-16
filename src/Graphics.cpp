@@ -19,7 +19,9 @@ Error Graphics::onInit() {
 }
 
 Error Graphics::onDestroy() {
-  SDL_DestroyGPUDevice(m_device.get());
+  if (m_device) {
+    SDL_DestroyGPUDevice(m_device.get());
+  }
   // Explicitly do not free command buffers
   SDL_QuitSubSystem(SDL_INIT_VIDEO);
   return {};

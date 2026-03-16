@@ -12,6 +12,7 @@ Diagnostics:
       - "*-use-anonymous-namespace"
       - "*-use-trailing-return-type"
       - "*-named-parameter"
+      - "*-isolate-declaration"
     CheckOptions:
       readability-identifier-naming.IgnoreNamespaces: std
       readability-identifier-naming.ClassCase: CamelCase

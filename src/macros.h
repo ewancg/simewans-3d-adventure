@@ -71,7 +71,7 @@ private:                                                                        
 #define _DEFINE_GETTER(TYPE, NAME, GETTER, OPERATION)                                              \
   Error GETTER(this auto &t_self, TYPE &t_out) {                                                   \
     if (Error err = Subsystem::ensureInitialized<decltype(t_self), Error>(                         \
-            t_self, "property " #NAME " read before initialization");                              \
+            t_self, "property " #NAME " read");                                                    \
         err) {                                                                                     \
       return err;                                                                                  \
     }                                                                                              \
@@ -82,7 +82,7 @@ private:                                                                        
 #define _DEFINE_SETTER(TYPE, NAME, SETTER, OPERATION)                                              \
   Error SETTER(this auto &t_self, TYPE t_val) {                                                    \
     if (Error err = Subsystem::ensureInitialized<decltype(t_self), Error>(                         \
-            t_self, "property " #NAME " set before initialization");                               \
+            t_self, "property " #NAME " set");                                                     \
         err) {                                                                                     \
       return err;                                                                                  \
     }                                                                                              \

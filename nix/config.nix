@@ -103,6 +103,8 @@ rec {
             clang-tool = name: "${pkgs.clang-tools}/bin/${name}";
           in
           builtins.toJSON {
+            file_scan_exclusions = [ "external" ];
+            file_scan_inclusions = [ ".env*" ];
             lsp.clangd.binary = {
               path = clang-tool "clangd";
               arguments = [

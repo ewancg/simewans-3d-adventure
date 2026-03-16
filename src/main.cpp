@@ -11,7 +11,7 @@
 // of the application and defer to the OS for ownership semantics, so to store a single gsl::owner
 // denoting the primary app state will warn just as much as using the raw pointers directly
 
-static SDL_AppResult getApplicationFromStateHandle(void *t_inState, Application *t_outApp) {
+static SDL_AppResult getApplication(void *t_inState, Application **t_outApp) {
   const static auto badState = [] {
     std::println(stderr, "App state pointer was invalidated since last frame.");
     return SDL_APP_FAILURE;
@@ -19,7 +19,7 @@ static SDL_AppResult getApplicationFromStateHandle(void *t_inState, Application 
   if (t_inState == nullptr) {
     return badState();
   }
-  t_outApp = static_cast<Application *>(t_inState);
+  *t_outApp = static_cast<Application *>(t_inState);
   if (t_outApp == nullptr) {
     return badState();
   }
@@ -32,15 +32,18 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
   (void)argc;
   (void)argv;
 
-  auto app = Application{};
-  if (auto err = app.init(); err) {
-    std::println(stderr, "Fatal error during app initialization: while {}", err.string());
+  // If we were not using SDL callbacks I would keep Application on the stack
+  // Since the class is predictably sized, it gives us a discrete page to use
+  auto *stateBuf = std::aligned_alloc(
+      std::max(sizeof(Application), static_cast<uint64_t>(sysconf(_SC_PAGESIZE))),
+      sizeof(Application));
+
+  auto *app = new (stateBuf) Application();
+  if (auto err = app->init(); err) {
+    std::println(stderr, "Fatal error during app initialization: {}", err.string());
     return SDL_APP_FAILURE;
   }
-
-  auto *stateBuf = std::aligned_alloc(alignof(Application), sizeof(Application));
-  new (stateBuf) Application(std::move(app));
-  *appstate = stateBuf;
+  *appstate = app;
 
   return SDL_APP_CONTINUE;
 }
@@ -48,11 +51,11 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
 // NOLINTNEXTLINE(*-identifier-naming)
 SDL_AppResult SDL_AppIterate(void *appstate) {
   Application *app{};
-  if (auto err = getApplicationFromStateHandle(appstate, app); err != SDL_APP_CONTINUE) {
+  if (auto err = getApplication(appstate, &app); err != SDL_APP_CONTINUE) {
     return err;
   }
   if (auto err = app->update(); err) {
-    std::println(stderr, "Fatal error while {}", err.string());
+    std::println(stderr, "Fatal error ({})", err.string());
     return SDL_APP_FAILURE;
   }
   return SDL_APP_CONTINUE;
@@ -62,6 +65,12 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
 SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
   // TODO: rig up to inputs (this is not guaranteed to be called on the main thread so we would need
   // to take care)
+  (void)event;
+
+  Application *app{};
+  if (auto err = getApplication(appstate, &app); err != SDL_APP_CONTINUE) {
+    return err;
+  }
   return SDL_APP_CONTINUE;
 }
 
@@ -69,12 +78,12 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
 void SDL_AppQuit(void *appstate, SDL_AppResult result) {
   result = SDL_APP_FAILURE;
   Application *app{};
-  if (auto err = getApplicationFromStateHandle(appstate, app); err != SDL_APP_CONTINUE) {
+  if (auto err = getApplication(appstate, &app); err != SDL_APP_CONTINUE) {
     result = err;
     return;
   }
   if (auto err = app->destroy(); !err) {
-    std::println(stderr, "Fatal error during shutdown: while {}", err.string());
+    std::println(stderr, "Fatal error during shutdown {}", err.string());
     result = SDL_APP_SUCCESS;
   }
   app->~Application();

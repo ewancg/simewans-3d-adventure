@@ -10,7 +10,7 @@ using Error = ApplicationError;
   }
 
 Error Application::onInit() {
-  // Order matters because input is initialized with a reference to window
+  /// Order is very important: input is initialized with a reference to window
   PROPAGATE_ERROR(INIT, m_audio.init());
   PROPAGATE_ERROR(INIT, m_graphics.init());
   PROPAGATE_ERROR(INIT, m_window.init());
@@ -22,10 +22,11 @@ Error Application::onInit() {
 }
 
 Error Application::onDestroy() {
-  PROPAGATE_ERROR(DESTROY, m_audio.destroy());
-  PROPAGATE_ERROR(DESTROY, m_graphics.destroy());
-  PROPAGATE_ERROR(DESTROY, m_window.destroy());
+  /// Order is very important: reverse of initialization order
   PROPAGATE_ERROR(DESTROY, m_input.destroy());
+  PROPAGATE_ERROR(DESTROY, m_window.destroy());
+  PROPAGATE_ERROR(DESTROY, m_graphics.destroy());
+  PROPAGATE_ERROR(DESTROY, m_audio.destroy());
   return {};
 }
 

@@ -5,7 +5,7 @@
 template <typename T> constexpr std::string_view noContext(T &) { return ""; }
 
 #define ERROR_ENTRIES(E)                                                                           \
-  E(ACCESS_WITHOUT_INIT, "executing a post-initialization operation")                              \
+  E(ACCESS_WITHOUT_INIT, "executing an operation before initialization")                           \
   E(DELETE_AFTER_FRAME, "executing a frame-end deferred deletion request")                         \
 //  DEFINE_BASE_ERROR_TYPES(Subsystem, ERROR_ENTRIES)
 // these are supposed to be the expanded result of the above macro call, no idea why it breaks
@@ -50,8 +50,8 @@ public:
 
   /// Ticks an instance
   Error update(this auto &t_self) {
-    if (auto err = Subsystem::ensureInitialized<decltype(t_self), Error>(
-            t_self, "update called before initialization");
+    if (auto err = Subsystem::ensureInitialized<decltype(t_self), Error>(t_self,
+                                                                         "subsystem update called");
         err) {
       return err;
     }

@@ -83,7 +83,7 @@ public:
     auto [type, str] = *t_self;
     auto typeStr = t_self.context();
     static thread_local std::string buffer{};
-    buffer = std::format("while {}: {}", typeStr, str);
+    buffer = std::format("{}: {}", typeStr, str);
     return buffer;
   }
 };
