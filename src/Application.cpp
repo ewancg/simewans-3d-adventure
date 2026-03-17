@@ -49,3 +49,7 @@ Error Application::onUpdate() {
 }
 
 // ----------
+
+TEST_CASE("Application class can be contained in single page on host system", "") {
+  REQUIRE(sizeof(Application) <= Application::getHostPageSize());
+}

@@ -21,9 +21,11 @@ option(THREAD_SAN "Build with the thread sanitizer" OFF)
 # slowdown introduced by MemorySanitizer is 3x. MemorySanitizer uses 2x more
 # real memory than a native run, 3x with origin tracking. Static linking is not
 # supported. MemorySanitizer requires that all program code is instrumented.
+
 option(MEMORY_SAN "Build with the memory sanitizer" OFF)
 # MemorySanitizer can track origins of uninitialized values, similar to
 # Valgrind’s –track-origins option.
+
 option(MEMORY_SAN_EX "Build with memory allocation origin tracking" OFF)
 
 # https://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html - highlights:
@@ -175,3 +177,27 @@ function(apply_sanitizers TARGET)
     target_link_libraries("${TARGET}" PRIVATE ${SANITIZER_GCC_LIBS})
   endif()
 endfunction()
+
+macro(check_sanitizers_enabled)
+  foreach(
+    VAR
+    ADDRESS_SAN
+    THREAD_SAN
+    MEMORY_SAN
+    MEMORY_SAN_EX
+    UB_SAN
+    UB_SAN_EX
+    UB_SAN_MIN_RT
+    RT_SAN
+    LEAK_SAN
+    TYPE_SAN
+    SAN_PRESET_ASAN
+    SAN_PRESET_TSAN
+    SAN_PRESET_MSAN
+    SAN_PRESET_UB_SAN_PROD)
+    if(${VAR})
+      set(SANITIZERS_ENABLED true)
+      return(PROPAGATE SANITIZERS_ENABLED)
+    endif()
+  endforeach()
+endmacro()

@@ -22,6 +22,8 @@ public:
   Error onDestroy();
   Error onUpdate();
 
+  static uint64_t getHostPageSize() { return uint64_t(sysconf(_SC_PAGESIZE)); };
+
 private:
   Audio m_audio{};
   Graphics m_graphics{};

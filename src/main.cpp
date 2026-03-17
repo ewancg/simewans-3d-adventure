@@ -1,16 +1,20 @@
+#include "Application.h"
+
+// Local includes above, we want tests in all other implementation files to be sourced
 #ifndef UNIT_TESTING
 
 #define SDL_MAIN_USE_CALLBACKS
 #include <SDL3/SDL_main.h>
 
-#include "Application.h"
+// The goal with the callbacks is to eliminate a global state for the runtime context of
+// the application so it can defer to the OS's runtime management; allows us to not worry about
+// the mainloop and allows us to receive events via. callback instead of polling for them (adding
+// latency waiting for the next frame)
 
 // NOLINTBEGIN(*-owning-memory, *-no-malloc, *-avoid-c-arrays)
-// These are outright required by SDL and/or its
-// platform-friendly callback system The goal is to eliminate a global state for the runtime context
-// of the application and defer to the OS for ownership semantics, so to store a single gsl::owner
-// denoting the primary app state will warn just as much as using the raw pointers directly
-
+// These are outright required by SDL and/or its callback system; C++ core guidelines with a C
+// library is an uphill battle; to store a single gsl::owner denoting the primary app (what it
+// wants) I would be completely undermining the callback system's benefits
 static SDL_AppResult getApplication(void *t_inState, Application **t_outApp) {
   const static auto badState = [] {
     std::println(stderr, "App state pointer was invalidated since last frame.");
@@ -33,10 +37,9 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
   (void)argv;
 
   // If we were not using SDL callbacks I would keep Application on the stack
-  // Since the class is predictably sized, it gives us a discrete page to use
-  auto *stateBuf = std::aligned_alloc(
-      std::max(sizeof(Application), static_cast<uint64_t>(sysconf(_SC_PAGESIZE))),
-      sizeof(Application));
+  // If the Application object ever overflows past 1 page's length, this is completely useless
+  auto *stateBuf = std::aligned_alloc(std::max(sizeof(Application), Application::getHostPageSize()),
+                                      sizeof(Application));
 
   auto *app = new (stateBuf) Application();
   if (auto err = app->init(); err) {
@@ -89,8 +92,6 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result) {
   app->~Application();
   std::free(appstate);
 }
+
 // NOLINTEND(*-owning-memory, *-no-malloc, *-avoid-c-arrays)
-#else
-#include <catch2/catch_test_macros.hpp>
-TEST_CASE("unit test", "") { REQUIRE(true); }
 #endif

@@ -1,12 +1,12 @@
 // This file & its includes will be automatically sourced by CMake
 #pragma once
 
+/// ----- STL includes -----
+///
 // IWYU pragma: begin_keep
 /// External
 #include <SDL3/SDL.h>
 #include <format>
-// #include <miniaudio/miniaudio.h>
-/// STL
 #include <functional>
 #include <memory>
 #include <optional>
@@ -16,6 +16,11 @@
 #include <tuple>
 #include <type_traits>
 #include <utility>
+
+#ifndef UNIT_TESTING
+#define CATCH_CONFIG_DISABLE
+#endif
+#include <catch2/catch_test_macros.hpp>
 
 // IWYU pragma: end_keep
 /// ----- Global project defines -----
