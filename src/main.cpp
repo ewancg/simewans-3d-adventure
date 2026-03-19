@@ -17,7 +17,7 @@
 // wants) I would be completely undermining the callback system's benefits
 static SDL_AppResult getApplication(void *t_inState, Application **t_outApp) {
   const static auto badState = [] {
-    std::println(stderr, "App state pointer was invalidated since last frame.");
+    std::println(stderr, "App state pointer was invalidated since last access.");
     return SDL_APP_FAILURE;
   };
   if (t_inState == nullptr) {

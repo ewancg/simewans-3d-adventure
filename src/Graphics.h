@@ -15,17 +15,13 @@
   E(GET_WINDOW_SWAPCHAIN_TEXTURE, "getting the texture from the swapchain")                        \
   E(FRAME_BEGIN, "beginning a new frame")                                                          \
   E(FRAME_FINALIZE, "finishing a frame")
-DEFINE_DERIVED_ERROR_TYPES(Graphics, ESubsystemError::END, SubsystemError, ESubsystemError,
-                           ERROR_ENTRIES);
+DEFINE_DERIVED_ERROR_TYPES(Graphics, Subsystem, ERROR_ENTRIES);
+
 #undef ERROR_ENTRIES
 
 class Graphics : public Subsystem<GraphicsError> {
+  SUBSYSTEM(Graphics)
 public:
-  using Error = GraphicsError;
-  Error onInit();
-  Error onDestroy();
-  Error onUpdate();
-
   /// Begins render pass
   Error beginFrame(SDL_GPUTexture *t_textureOut);
   /// Ends render pass, submits command buffer, returns frame time

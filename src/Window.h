@@ -7,29 +7,26 @@
   E(HIDE, "hiding the window")                                                                     \
   E(MOVE, "moving the window")                                                                     \
   E(RESIZE, "resizing the window")
-DEFINE_DERIVED_ERROR_TYPES(Window, ESubsystemError::END, SubsystemError, ESubsystemError,
-                           ERROR_ENTRIES);
+DEFINE_DERIVED_ERROR_TYPES(Window, Subsystem, ERROR_ENTRIES);
 #undef ERROR_ENTRIES
 
 constexpr int WINDOW_START_WIDTH = 960;
 constexpr int WINDOW_START_HEIGHT = 540;
 
 class Window : public Subsystem<WindowError> {
+  friend class Subsystem;
+
 public:
   using Error = WindowError;
 
   using Mama = Subsystem<Error>;
 
-  Error onInit();
-  Error onDestroy();
   /// Show the window
   Error show();
   /// Close the window
   Error close();
   /// Demand focus on the window
   Error raise();
-  /// Tick the window
-  Error onUpdate();
   /// Move the window
   Error move(uint32_t x_pos, uint32_t y_pos);
   /// Resize the window
@@ -40,6 +37,10 @@ public:
   SDL_Window *getRawHandle();
 
 private:
+  Error onInit();
+  Error onDestroy();
+  Error onUpdate();
+
   uint32_t m_x_pos{}, m_y_pos{};
   DEFINE_PROPERTY(uint32_t, m_width, getWidth, setWidth, 0);
   DEFINE_PROPERTY(uint32_t, m_height, getHeight, setHeight, 0);

@@ -7,8 +7,7 @@
   E(INIT, "initializing input")                                                                    \
   E(EVENT, "processing input events")                                                              \
   E(SET_MOUSE_POS, "setting the mouse cursor position")
-DEFINE_DERIVED_ERROR_TYPES(Input, ESubsystemError::END, SubsystemError, ESubsystemError,
-                           ERROR_ENTRIES);
+DEFINE_DERIVED_ERROR_TYPES(Input, Subsystem, ERROR_ENTRIES);
 #undef ERROR_ENTRIES
 
 enum EInputMapping : uint8_t {
@@ -77,14 +76,9 @@ enum EInputMapping : uint8_t {
 };
 
 class Input : public Subsystem<InputError> {
+  SUBSYSTEM(Input)
 public:
   explicit Input(Window &t_window) : m_window(t_window) {}
-
-  using Error = InputError;
-  Error onInit();
-  Error onDestroy();
-  Error onUpdate();
-
   /// Checks if the input is currently down
   bool mappingIsPressed(EInputMapping t_input);
   /// Checks if the input is currently down, and was not last frame

@@ -1,14 +1,12 @@
 // This file & its includes will be automatically sourced by CMake
 #pragma once
 
-/// ----- STL includes -----
-///
-// IWYU pragma: begin_keep
-/// External
+/// ----- External includes -----
 #include <SDL3/SDL.h>
+#include <miniaudio/miniaudio.h>
+
+/// ----- STL includes -----
 #include <format>
-#include <functional>
-#include <memory>
 #include <optional>
 #include <print>
 #include <string>
