@@ -37,7 +37,8 @@ private:
   // This is only a raw pointer because we explicitly do not free it per docs and we do not benefit
   // from ownership semantics at this point
   std::array<SDL_GPUCommandBuffer *, ECommandBufferRole::LENGTH> m_commandBuffers{};
-  std::shared_ptr<SDL_GPUDevice> m_device;
+
+  SDL_GPUDevice *m_device{};
 
   uint64_t m_lastFrameTime{};
   // Transient handle that only lives between beginFrame and endFrame; nullptr all other times

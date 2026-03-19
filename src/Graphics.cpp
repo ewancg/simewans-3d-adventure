@@ -1,28 +1,42 @@
 #include "Graphics.h"
+#include "Subsystem.h"
+#include <SDL3/SDL_gpu.h>
 using enum EGraphicsError;
 using Error = GraphicsError;
 
 Error Graphics::onInit() {
+  /// Device
   if (!SDL_InitSubSystem(SDL_INIT_VIDEO)) {
     return {INIT, SDL_GetError()};
   }
-
   auto *device = SDL_CreateGPUDevice(SDL_GPU_SHADERFORMAT_SPIRV | SDL_GPU_SHADERFORMAT_DXIL |
                                          SDL_GPU_SHADERFORMAT_METALLIB,
                                      GRAPHICS_DEBUGGING, nullptr);
   if (device == nullptr) {
     return {GPU_INIT, SDL_GetError()};
   }
+  m_device = device;
 
-  m_device = std::shared_ptr<SDL_GPUDevice>(device, SDL_DestroyGPUDevice);
+  /// Buffers
+
+  auto *uploadBuffer = std::unique_ptr<SDL_GPUTransferBuffer>(SDL_CreateGPUTransferBuffer(
+      m_device.get(), SDL_GPUTransferBufferCreateInfo{
+                          .usage = SDL_GPUTransferBufferUsage::SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD,
+                          .size = 0,
+                          .props = 0}));
+
+  ;
+
   return {};
 }
 
 Error Graphics::onDestroy() {
-  if (m_device) {
-    SDL_DestroyGPUDevice(m_device.get());
+  /// Buffers
+
+  /// Device
+  if (m_device != nullptr) {
+    SDL_DestroyGPUDevice(m_device);
   }
-  // Explicitly do not free command buffers
   SDL_QuitSubSystem(SDL_INIT_VIDEO);
   return {};
 }
@@ -32,11 +46,13 @@ Error Graphics::onUpdate() { return {}; }
 // ----------
 
 Error Graphics::beginFrame(SDL_GPUTexture *t_textureOut) {
+  ensureInitialized(this, "");
   //  if (auto err = (Subsystem::ensureInitialized)(&*this, "beginFrame called prematurely"); err) {
   //    return err;
   //  }
+
   for (auto &item : m_commandBuffers) {
-    item = SDL_AcquireGPUCommandBuffer(m_device.get());
+    item = SDL_AcquireGPUCommandBuffer(m_device);
     if (item == nullptr) {
       return {GPU_INIT_CMDBUF, SDL_GetError()};
     }
@@ -88,14 +104,11 @@ Error Graphics::attachWindow(Window &t_windowIn) {
   return {};
 }
 
-// template <typename T>
-// concept IsEError = std::is_base_of<uint8_t, T>();
-// template <IsEError T>
-
-template <typename T = Error> static constexpr T badCall(const std::string &t_msg) {
+template <IsSubsystemError T = Error> static constexpr T badCall(const std::string &t_msg) {
   return {GET_WINDOW_SWAPCHAIN_TEXTURE,
           "graphics::get_swapchain_texture called without a " + t_msg};
 }
+
 Error Graphics::getWindowSwapchainTexture(Window &t_windowIn, SDL_GPUTexture *t_textureOut) {
   auto *commandBuf = m_commandBuffers[ECommandBufferRole::RENDER];
   if (commandBuf == nullptr) {

@@ -108,9 +108,7 @@ private:                                                                        
 
 #define _DEFINE_GETTER(TYPE, NAME, GETTER, OPERATION)                                              \
   Error GETTER(this auto &t_self, TYPE &t_out) {                                                   \
-    if (Error err = Subsystem::ensureInitialized<decltype(t_self), Error>(                         \
-            t_self, "property " #NAME " read");                                                    \
-        err) {                                                                                     \
+    if (Error err = ensureInitialized(t_self, "property " #NAME " read"); err) {                   \
       return err;                                                                                  \
     }                                                                                              \
     t_out = OPERATION(t_self.NAME);                                                                \
@@ -119,9 +117,7 @@ private:                                                                        
 // const setter input = forced copy, no need
 #define _DEFINE_SETTER(TYPE, NAME, SETTER, OPERATION)                                              \
   Error SETTER(this auto &t_self, TYPE t_val) {                                                    \
-    if (Error err = Subsystem::ensureInitialized<decltype(t_self), Error>(                         \
-            t_self, "property " #NAME " set");                                                     \
-        err) {                                                                                     \
+    if (Error err = ensureInitialized(t_self, "property " #NAME " set"); err) {                    \
       return err;                                                                                  \
     }                                                                                              \
     t_self.NAME = OPERATION(t_val);                                                                \

@@ -16,6 +16,11 @@ _DEFINE_BASE_ERROR_CONTEXT_TYPE(Subsystem, ERROR_ENTRIES)
 template <typename Error>
 concept IsSubsystemError = bool(std::is_base_of<SubsystemError, Error>());
 
+template <IsSubsystemError Error> class Subsystem;
+
+template <typename T, typename Error>
+concept IsSubsystem = bool(std::is_base_of<Subsystem<Error>, T>());
+
 template <IsSubsystemError Error = SubsystemError> class Subsystem {
 private:
   using enum ESubsystemError;
@@ -50,9 +55,7 @@ public:
 
   /// Ticks an instance
   Error update(this auto &t_self) {
-    if (auto err = Subsystem::ensureInitialized<decltype(t_self), Error>(t_self,
-                                                                         "subsystem update called");
-        err) {
+    if (auto err = ensureInitialized(t_self, "subsystem update called"); err) {
       return err;
     }
     return t_self.onUpdate();
@@ -82,7 +85,7 @@ public:
     deleteAfterFrame(t_object.release());
   }
 
-  template <typename T, IsSubsystemError ForeignError>
+  template <IsSubsystemError ForeignError, IsSubsystem<ForeignError> T>
   static ForeignError ensureInitialized(T &t_self, std::string_view t_msg) noexcept {
     if (!t_self.m_isInitialized) {
       return {ESubsystemError::ACCESS_WITHOUT_INIT, t_msg};

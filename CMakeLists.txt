@@ -69,7 +69,7 @@ function(create_main_executable TARGET)
   )
 
   # --- Set non-define compile flags
-  set(FLAGS ${ARG_FLAGS} "${OPTIMIZATION_LEVEL}")
+  set(FLAGS ${ARG_FLAGS} "${OPTIMIZATION_LEVEL}" "-march=native")
   target_compile_options("${TARGET}" PRIVATE ${FLAGS})
   target_link_options("${TARGET}" PRIVATE ${FLAGS})
 
