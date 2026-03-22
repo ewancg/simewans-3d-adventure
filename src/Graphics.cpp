@@ -62,10 +62,9 @@ Error Graphics::onUpdate() { return {}; }
 
 Error Graphics::beginFrame(SDL_GPUTexture *t_textureOut) {
   PASS_ERROR(ensureInitialized<GraphicsError>(*this, "beginFrame called"))
-
-  for (auto &item : m_commandBuffers) {
-    item = SDL_AcquireGPUCommandBuffer(m_device.get());
-    if (item == nullptr) {
+  for (auto *item : m_commandBuffers) {
+    if (item = SDL_AcquireGPUCommandBuffer(m_device.get());
+        m_device == nullptr || item == nullptr) {
       return {GPU_INIT_CMDBUF, SDL_GetError()};
     }
   }
@@ -85,10 +84,11 @@ Error Graphics::beginFrame(SDL_GPUTexture *t_textureOut) {
 Error Graphics::endFrame(double &t_frameTimeOut) {
   SDL_EndGPURenderPass(m_renderPass);
 
-  for (const auto &item : m_commandBuffers) {
+  for (auto *item : m_commandBuffers) {
     if (auto err = SDL_SubmitGPUCommandBuffer(item); err) {
       return {FRAME_FINALIZE, SDL_GetError()};
     }
+    item = {};
   }
 
   uint64_t now = SDL_GetTicksNS();
@@ -116,22 +116,23 @@ Error Graphics::attachWindow(Window &t_windowIn) {
   return {};
 }
 
-template <IsSubsystemError T = Error> static constexpr T badCall(const std::string &t_msg) {
-  return {GET_WINDOW_SWAPCHAIN_TEXTURE,
-          std::string_view("graphics::get_swapchain_texture called without a " + t_msg)};
-}
+#define BAD_CALL(MESSAGE)                                                                          \
+  return {                                                                                         \
+    GET_WINDOW_SWAPCHAIN_TEXTURE,                                                                  \
+        std::string_view("graphics::get_swapchain_texture called without a " MESSAGE)              \
+  }
 
 Error Graphics::getWindowSwapchainTexture(Window &t_windowIn, SDL_GPUTexture *t_textureOut) {
   auto *commandBuf = m_commandBuffers[ECommandBufferRole::RENDER];
   if (commandBuf == nullptr) {
-    return badCall("rendering command buffer");
+    BAD_CALL("rendering command buffer");
   }
   if (t_textureOut == nullptr) {
-    return badCall("destination texture");
+    BAD_CALL("destination texture");
   }
   auto *window = t_windowIn.getRawHandle();
   if (window == nullptr) {
-    return badCall("subject window");
+    BAD_CALL("subject window");
   }
   if (!SDL_WaitAndAcquireGPUSwapchainTexture(commandBuf, window, &t_textureOut, nullptr, nullptr)) {
     return {GET_WINDOW_SWAPCHAIN_TEXTURE, SDL_GetError()};
