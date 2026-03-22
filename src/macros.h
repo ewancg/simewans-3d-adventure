@@ -16,6 +16,11 @@
   case Enum::CONSTANT:                                                                             \
     return MSG;
 
+#define PASS_ERROR(BODY)                                                                           \
+  if (auto err = (BODY); err) {                                                                    \
+    return err;                                                                                    \
+  }
+
 //
 // #define _DEFINE_ERROR_CONTEXT_TYPE(NAME, START_INDEX, PARENT_TYPE, BASE_ENUM_TYPE, IS_DERIVED, \
 //                                    ENTRIES)
@@ -77,7 +82,7 @@
 
 #define _DEFINE_DERIVED_ERROR_CONTEXT_TYPE(NAME, START_INDEX, BASE_ERROR_TYPE, BASE_ENUM_TYPE,     \
                                            ENTRIES)                                                \
-  struct _ERROR_CONTEXT_NAME(NAME) : public BASE_ERROR_TYPE {                                      \
+  struct [[nodiscard]] _ERROR_CONTEXT_NAME(NAME) : public BASE_ERROR_TYPE {                        \
     using Enum = _ERROR_ENUM_NAME(NAME);                                                           \
     using BASE_ERROR_TYPE::BASE_ERROR_TYPE;                                                        \
     using BASE_ERROR_TYPE::operator=;                                                              \
@@ -108,18 +113,14 @@ private:                                                                        
 
 #define _DEFINE_GETTER(TYPE, NAME, GETTER, OPERATION)                                              \
   Error GETTER(this auto &t_self, TYPE &t_out) {                                                   \
-    if (Error err = ensureInitialized(t_self, "property " #NAME " read"); err) {                   \
-      return err;                                                                                  \
-    }                                                                                              \
+    PASS_ERROR(ensureInitialized<Error>(t_self, "property " #NAME " read"))                        \
     t_out = OPERATION(t_self.NAME);                                                                \
     return {};                                                                                     \
   }
 // const setter input = forced copy, no need
 #define _DEFINE_SETTER(TYPE, NAME, SETTER, OPERATION)                                              \
   Error SETTER(this auto &t_self, TYPE t_val) {                                                    \
-    if (Error err = ensureInitialized(t_self, "property " #NAME " set"); err) {                    \
-      return err;                                                                                  \
-    }                                                                                              \
+    PASS_ERROR(ensureInitialized<Error>(t_self, "property " #NAME " set"))                         \
     t_self.NAME = OPERATION(t_val);                                                                \
     return {};                                                                                     \
   }
@@ -162,3 +163,19 @@ private:                                                                        
   Error onInit();                                                                                  \
   Error onDestroy();                                                                               \
   Error onUpdate();
+
+#define NO_COPY(TYPE, REASON) TYPE(const TYPE &t_in) = delete; // (REASON)
+#define NO_COPY_ASSIGN(TYPE, REASON) TYPE &operator=(const TYPE &t_in) = delete;
+#define NO_COPY_OR_ASSIGN(TYPE, REASON)                                                            \
+  NO_COPY(TYPE, REASON)                                                                            \
+  NO_COPY_ASSIGN(TYPE, REASON)
+
+#define NO_MOVE(TYPE, REASON) TYPE(TYPE &&m_in) = delete;
+#define NO_MOVE_ASSIGN(TYPE, REASON) TYPE &operator=(TYPE &&m_in) = delete;
+#define NO_MOVE_OR_ASSIGN(TYPE, REASON)                                                            \
+  NO_MOVE(TYPE, REASON)                                                                            \
+  NO_MOVE_ASSIGN(TYPE, REASON)
+
+#define NO_COPY_MOVE_OR_ASSIGN(TYPE, NOCOPY_REASON, NOMOVE_REASON)                                 \
+  NO_COPY_OR_ASSIGN(TYPE, NOCOPY_REASON)                                                           \
+  NO_MOVE_OR_ASSIGN(TYPE, NOMOVE_REASON)

@@ -2,8 +2,8 @@
 #pragma once
 
 /// ----- External includes -----
+
 #include <SDL3/SDL.h>
-#include <miniaudio/miniaudio.h>
 
 /// ----- STL includes -----
 #include <format>
@@ -94,3 +94,5 @@ public:
 const static auto logPassiveError = []<typename E>(E t_err) {
   std::println(stderr, "Error encountered {}", t_err.string());
 };
+
+using namespace std::string_view_literals;

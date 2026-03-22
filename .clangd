@@ -13,6 +13,7 @@ Diagnostics:
       - "*-use-trailing-return-type"
       - "*-named-parameter"
       - "*-isolate-declaration"
+      - "*-macro-usage" # old habits die hard
     CheckOptions:
       readability-identifier-naming.IgnoreNamespaces: std
       readability-identifier-naming.ClassCase: CamelCase

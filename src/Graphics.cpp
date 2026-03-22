@@ -1,6 +1,5 @@
 #include "Graphics.h"
-#include "Subsystem.h"
-#include <SDL3/SDL_gpu.h>
+
 using enum EGraphicsError;
 using Error = GraphicsError;
 
@@ -12,30 +11,46 @@ Error Graphics::onInit() {
   auto *device = SDL_CreateGPUDevice(SDL_GPU_SHADERFORMAT_SPIRV | SDL_GPU_SHADERFORMAT_DXIL |
                                          SDL_GPU_SHADERFORMAT_METALLIB,
                                      GRAPHICS_DEBUGGING, nullptr);
+  /* CREATE SDL GPU DEVICE */
   if (device == nullptr) {
     return {GPU_INIT, SDL_GetError()};
   }
-  m_device = device;
 
   /// Buffers
+  /* CREATE SDL GPU TRANSFER BUFFERS */
+  SDL_GPUTransferBufferCreateInfo uploadBufCreateInfo = {.usage =
+                                                             SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD,
+                                                         .size = DEFAULT_TRANSFER_BUFFER_SIZE,
+                                                         .props = 0};
+  m_upload_buffer = SDL_CreateGPUTransferBuffer(device, &uploadBufCreateInfo);
+  if (m_upload_buffer == nullptr) {
+    return {GPU_INIT, SDL_GetError()};
+  }
 
-  auto *uploadBuffer = std::unique_ptr<SDL_GPUTransferBuffer>(SDL_CreateGPUTransferBuffer(
-      m_device.get(), SDL_GPUTransferBufferCreateInfo{
-                          .usage = SDL_GPUTransferBufferUsage::SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD,
-                          .size = 0,
-                          .props = 0}));
+  SDL_GPUTransferBufferCreateInfo downloadBufCreateInfo = {.usage =
+                                                               SDL_GPU_TRANSFERBUFFERUSAGE_DOWNLOAD,
+                                                           .size = DEFAULT_TRANSFER_BUFFER_SIZE,
+                                                           .props = 0};
+  m_download_buffer = SDL_CreateGPUTransferBuffer(device, &downloadBufCreateInfo);
+  if (m_download_buffer == nullptr) {
+    return {GPU_INIT, SDL_GetError()};
+  }
 
-  ;
-
+  m_device = std::shared_ptr<SDL_GPUDevice>(device, SDL_DestroyGPUDevice);
   return {};
 }
 
 Error Graphics::onDestroy() {
-  /// Buffers
 
-  /// Device
-  if (m_device != nullptr) {
-    SDL_DestroyGPUDevice(m_device);
+  /* DESTROY SDL GPU TRANSFER BUFFERS */
+  if (m_upload_buffer != nullptr) {
+    SDL_ReleaseGPUTransferBuffer(m_device.get(), m_upload_buffer);
+  }
+  if (m_download_buffer != nullptr) {
+    SDL_ReleaseGPUTransferBuffer(m_device.get(), m_download_buffer);
+  }
+  if (m_device) {
+    SDL_DestroyGPUDevice(m_device.get());
   }
   SDL_QuitSubSystem(SDL_INIT_VIDEO);
   return {};
@@ -46,24 +61,21 @@ Error Graphics::onUpdate() { return {}; }
 // ----------
 
 Error Graphics::beginFrame(SDL_GPUTexture *t_textureOut) {
-  ensureInitialized(this, "");
-  //  if (auto err = (Subsystem::ensureInitialized)(&*this, "beginFrame called prematurely"); err) {
-  //    return err;
-  //  }
+  PASS_ERROR(ensureInitialized<GraphicsError>(*this, "beginFrame called"))
 
   for (auto &item : m_commandBuffers) {
-    item = SDL_AcquireGPUCommandBuffer(m_device);
+    item = SDL_AcquireGPUCommandBuffer(m_device.get());
     if (item == nullptr) {
       return {GPU_INIT_CMDBUF, SDL_GetError()};
     }
   }
-  auto *commandBuf = m_commandBuffers[RENDER];
+  auto *commandBuf = m_commandBuffers[ECommandBufferRole::RENDER];
 
   // Setup and start a render pass
   SDL_GPUColorTargetInfo targetInfo{.texture = t_textureOut,
                                     .mip_level = 0,
                                     .layer_or_depth_plane = 0,
-                                    .clear_color = {.r = 0.6F, .g = 0.2F, .b = 0.2F},
+                                    .clear_color = NULL_BRUSH_COLOR,
                                     .load_op = SDL_GPU_LOADOP_CLEAR,
                                     .store_op = SDL_GPU_STOREOP_STORE,
                                     .cycle = false};
@@ -126,4 +138,19 @@ Error Graphics::getWindowSwapchainTexture(Window &t_windowIn, SDL_GPUTexture *t_
   }
   return {};
 }
+
 #undef BAD_CALL
+
+Error Graphics::uploadData(GPUBuffer &t_buf, void *t_data, uint32_t t_size, bool t_cycle) {
+  void *mappedBuffer = SDL_MapGPUTransferBuffer(m_device.get(), m_upload_buffer, t_cycle);
+  memcpy(mappedBuffer, t_data, t_size);
+  SDL_UnmapGPUTransferBuffer(m_device.get(), m_upload_buffer);
+
+  SDL_GPUTransferBufferLocation source = {.transfer_buffer = m_upload_buffer, .offset = 0};
+  SDL_GPUBufferRegion destination = {.buffer = t_buf.m_buffer, .offset = 0, .size = t_size};
+  SDL_GPUCopyPass *copyPass = SDL_BeginGPUCopyPass(m_commandBuffers[ECommandBufferRole::COPY]);
+  SDL_UploadToGPUBuffer(copyPass, &source, &destination, t_cycle);
+  SDL_EndGPUCopyPass(copyPass);
+
+  return {};
+}

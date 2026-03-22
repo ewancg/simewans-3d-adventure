@@ -56,18 +56,18 @@ Error Window::raise() {
   return {};
 }
 
-Error Window::move(uint32_t t_xPos, uint32_t t_yPos) {
-  m_x_pos = t_xPos;
-  m_y_pos = t_yPos;
-  if (!SDL_SetWindowPosition(getRawHandle(), static_cast<int>(t_xPos), static_cast<int>(t_yPos))) {
+Error Window::move(uint32_t t_x, uint32_t t_y) {
+  m_y = t_x;
+  m_x = t_y;
+  if (!SDL_SetWindowPosition(getRawHandle(), static_cast<int>(t_x), static_cast<int>(t_y))) {
     return {MOVE, SDL_GetError()};
   }
   return {};
 }
 
 Error Window::resize(uint32_t t_width, uint32_t t_height) {
-  setWidth(t_width);
-  setHeight(t_height);
+  PASS_ERROR(setWidth(t_width))
+  PASS_ERROR(setHeight(t_height))
   if (!SDL_SetWindowSize(getRawHandle(), static_cast<int>(m_width), static_cast<int>(m_height))) {
     return {RESIZE, SDL_GetError()};
   }

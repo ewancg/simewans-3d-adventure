@@ -1,10 +1,15 @@
 #pragma once
+#include "Graphics/GPUBuffer.h"
+#include "Graphics/GPUShader.h"
+#include "Graphics/GPUTexture.h"
 #include "Subsystem.h"
 #include "Window.h"
 
 #ifndef GRAPHICS_DEBUGGING
 #define GRAPHICS_DEBUGGING false
 #endif
+
+#define NULL_BRUSH_COLOR {.r = 0.6F, .g = 0.2F, .b = 0.2F}
 
 #define ERROR_ENTRIES(E)                                                                           \
   E(INIT, "initializing the graphics subsystem")                                                   \
@@ -19,6 +24,8 @@ DEFINE_DERIVED_ERROR_TYPES(Graphics, Subsystem, ERROR_ENTRIES);
 
 #undef ERROR_ENTRIES
 
+// TODO: create a GPU_Pipeline struct
+
 class Graphics : public Subsystem<GraphicsError> {
   SUBSYSTEM(Graphics)
 public:
@@ -32,13 +39,20 @@ public:
   /// Acquires the swapchain texture for direct rendering
   Error getWindowSwapchainTexture(Window &t_windowIn, SDL_GPUTexture *t_textureOut);
 
+  // NOTE: this does not do anything like size checks or grouping upload commands
+  // or handling data larger then it's buffer in multiple uploads
+  Error uploadData(GPUBuffer &t_buffer, void *t_data, uint32_t t_size, bool t_cycle);
+
 private:
-  enum ECommandBufferRole : uint8_t { RENDER = 0, LENGTH };
+  enum ECommandBufferRole : uint8_t { RENDER = 0, COPY = 1, CB_LENGTH = COPY + 1 };
+  enum ETransferBufferRole : uint8_t { UPLOAD = 0, DOWNLOAD = 1, TB_LENGTH = DOWNLOAD + 1 };
   // This is only a raw pointer because we explicitly do not free it per docs and we do not benefit
   // from ownership semantics at this point
-  std::array<SDL_GPUCommandBuffer *, ECommandBufferRole::LENGTH> m_commandBuffers{};
-
-  SDL_GPUDevice *m_device{};
+  std::array<SDL_GPUCommandBuffer *, ECommandBufferRole::CB_LENGTH> m_commandBuffers{};
+  std::array<SDL_GPUTransferBuffer *, ETransferBufferRole::TB_LENGTH> m_transferBuffers{};
+  std::shared_ptr<SDL_GPUDevice> m_device;
+  SDL_GPUTransferBuffer *m_upload_buffer;
+  SDL_GPUTransferBuffer *m_download_buffer;
 
   uint64_t m_lastFrameTime{};
   // Transient handle that only lives between beginFrame and endFrame; nullptr all other times

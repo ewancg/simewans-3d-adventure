@@ -1,5 +1,4 @@
 #pragma once
-#include "Subsystem.h"
 #include "Window.h"
 #include <bitset>
 
@@ -80,11 +79,11 @@ class Input : public Subsystem<InputError> {
 public:
   explicit Input(Window &t_window) : m_window(t_window) {}
   /// Checks if the input is currently down
-  bool mappingIsPressed(EInputMapping t_input);
+  bool mappingIsPressed(EInputMapping t_in);
   /// Checks if the input is currently down, and was not last frame
-  bool mappingNewlyPressed(EInputMapping t_input);
+  bool mappingNewlyPressed(EInputMapping t_in);
   /// Sets the mouse cursor to an absolute position
-  Error setMousePos(uint32_t t_xPos, uint32_t t_yPos);
+  Error setMousePos(uint32_t t_x, uint32_t t_y);
   /// Centers the cursor within the screen
   Error centerMousePos();
 
@@ -93,14 +92,14 @@ private:
     float x, y;
     float xm, ym;
   } m_mouse_data{};
-  std::bitset<EInputMapping::LENGTH> m_input_state{0};
-  std::bitset<EInputMapping::LENGTH> m_last_input_state{0};
+  std::bitset<EInputMapping::LENGTH> m_inputState{0};
+  std::bitset<EInputMapping::LENGTH> m_lastInputState{0};
   std::reference_wrapper<Window> m_window;
 
-  static bool getKeyState(const SDL_KeyboardEvent &t_event);
-  void handleKeyboardEvent(const SDL_KeyboardEvent &t_event);
-  void handleMouseButtonEvent(const SDL_MouseButtonEvent &t_event);
-  Error handleMouseEvent(const SDL_Event &t_event);
+  static bool getKeyState(const SDL_KeyboardEvent &t_evt);
+  void handleKeyboardEvent(const SDL_KeyboardEvent &t_evt);
+  void handleMouseButtonEvent(const SDL_MouseButtonEvent &t_evt);
+  Error handleMouseEvent(const SDL_Event &t_evt);
 };
 
 // clang-format off

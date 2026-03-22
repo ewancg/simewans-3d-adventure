@@ -41,7 +41,7 @@ private:
   Error onDestroy();
   Error onUpdate();
 
-  uint32_t m_x_pos{}, m_y_pos{};
+  uint32_t m_y{}, m_x{};
   DEFINE_PROPERTY(uint32_t, m_width, getWidth, setWidth, 0);
   DEFINE_PROPERTY(uint32_t, m_height, getHeight, setHeight, 0);
 

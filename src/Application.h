@@ -20,11 +20,13 @@ class Application : public Subsystem<ApplicationError> {
   SUBSYSTEM(Application);
 
 public:
+  // NOLINTBEGIN (*-non-private-member-variables-in-classes)
   // Object parameters must be populated at the callsite before initialization
   Audio m_audio{};
   Graphics m_graphics{};
   Window m_window{};
   Input m_input = Input(m_window);
+  // NOLINTEND
 
   static uint64_t getHostPageSize() { return uint64_t(sysconf(_SC_PAGESIZE)); };
 

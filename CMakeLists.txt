@@ -12,6 +12,7 @@ set(CMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES
     ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES})
 
 option(BUILD_TESTS "Build all test targets from src/ and tests/" OFF)
+option(ENABLE_IPO "Enable IPO/LTO")
 
 function(create_main_executable TARGET)
   # --- Setup
@@ -36,6 +37,17 @@ function(create_main_executable TARGET)
     set(OPTIMIZATION_LEVEL "-O1")
   endif()
 
+  if(ENABLE_IPO)
+    include(CheckIPOSupported)
+    check_ipo_supported(RESULT result OUTPUT output)
+    if(result)
+      set_property(TARGET "${TARGET}" PROPERTY INTERPROCEDURAL_OPTIMIZATION
+                                               TRUE)
+    else()
+      message(WARNING "IPO is not supported: ${output}")
+    endif()
+  endif()
+
   # --- Create executable
   unset(ROOT_SOURCES)
   foreach(SRC #
@@ -45,11 +57,7 @@ function(create_main_executable TARGET)
   add_executable("${TARGET}" ${ARG_SOURCES} ${ROOT_SOURCES})
 
   # --- Populate include directories
-  target_include_directories(
-    "${TARGET}"
-    PRIVATE #
-            ${ARG_INCLUDE_DIRS} #
-            "${CMAKE_SOURCE_DIR}/include" "${CMAKE_SOURCE_DIR}/external")
+  target_include_directories("${TARGET}" PRIVATE "${CMAKE_SOURCE_DIR}/include")
 
   # --- Link libraries
 
@@ -61,12 +69,16 @@ function(create_main_executable TARGET)
     "${TARGET}"
     PRIVATE #
             ${ARG_LIBRARIES} #
-            SDL3::Headers SDL3::SDL3)
+            asound
+            jack
+            pulse
+            PkgConfig::miniaudio
+            frozen::frozen # constexpr STL-mimicking types
+            SDL3::Headers
+            SDL3::SDL3)
   # --- Set #defines
-  target_compile_definitions(
-    "${TARGET}" PRIVATE #
-                        ${ARG_DEFINES} #
-  )
+  target_compile_definitions("${TARGET}" PRIVATE #
+                                                 ${ARG_DEFINES})
 
   # --- Set non-define compile flags
   set(FLAGS ${ARG_FLAGS} "${OPTIMIZATION_LEVEL}" "-march=native")
@@ -83,7 +95,9 @@ endfunction()
 
 include(FetchContent)
 include(Sanitizers)
-find_package(SDL3 REQUIRED)
+find_package(SDL3 REQUIRED CONFIG)
+find_package(frozen REQUIRED CONFIG)
+cmake_pkg_config(IMPORT miniaudio "0.11.24" REQUIRED)
 
 if(${BUILD_TESTS})
   enable_testing()

@@ -39,9 +39,7 @@ public:
 
   /// Populates a default-constructed instance (can error).
   Error init(this auto &t_self) {
-    if (auto error = t_self.onInit(); error) {
-      return error;
-    }
+    PASS_ERROR(t_self.onInit())
     t_self.m_isInitialized = true;
     return {};
   }
@@ -55,9 +53,7 @@ public:
 
   /// Ticks an instance
   Error update(this auto &t_self) {
-    if (auto err = ensureInitialized(t_self, "subsystem update called"); err) {
-      return err;
-    }
+    PASS_ERROR(ensureInitialized<Error>(t_self, "subsystem update called"))
     return t_self.onUpdate();
     // Execute deferred deletions
     auto batch = std::move(t_self.m_pending_deletion_callbacks);

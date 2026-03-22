@@ -87,7 +87,8 @@
         {
           devShell = pkgs.mkShell {
             inputsFrom = [ packages.default ];
-            inherit stdenv buildInputs nativeBuildInputs;
+            inherit buildInputs nativeBuildInputs;
+            stdenv = stdenv.impureUseNativeOptimizations;
             shellHook = let source =
               lib.concatStringsSep "\n"
                 (

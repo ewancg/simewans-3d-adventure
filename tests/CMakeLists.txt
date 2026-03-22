@@ -9,8 +9,16 @@ string(REPLACE "-DNDEBUG" "" CMAKE_CXX_FLAGS_RELEASE
 set(CATCH2_ARGS --reporter compact --verbosity quiet)
 
 set(TESTS_PROJECT_NAME "${PROJECT_NAME}-tests")
-create_main_executable("${TESTS_PROJECT_NAME}" LIBRARIES Catch2::Catch2WithMain
-                       DEFINES UNIT_TESTING)
+create_main_executable(
+  "${TESTS_PROJECT_NAME}"
+  LIBRARIES
+  Catch2::Catch2WithMain
+  DEFINES
+  UNIT_TESTING
+  frozen.tests
+  MINIAUDIO_BUILD_TESTS
+  SDL_TESTS
+  SDL_TEST_LIBRARY)
 catch_discover_tests("${TESTS_PROJECT_NAME}" EXTRA_ARGS ${CATCH2_ARGS}
                      TEST_PREFIX "inline:")
 

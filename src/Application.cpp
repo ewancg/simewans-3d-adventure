@@ -32,7 +32,7 @@ Error Application::onDestroy() {
 
 Error Application::onUpdate() {
   SDL_GPUTexture *tex{};
-  m_graphics.getWindowSwapchainTexture(m_window, tex);
+  m_graphics.getWindowSwapchainTexture(m_window, tex).mapError(logPassiveError);
   m_graphics.beginFrame(tex).mapError(logPassiveError);
 
   m_audio.update().mapError(logPassiveError);
@@ -41,7 +41,7 @@ Error Application::onUpdate() {
   m_input.update().mapError(logPassiveError);
 
   double lastFrameTime{};
-  m_graphics.endFrame(lastFrameTime);
+  m_graphics.endFrame(lastFrameTime).mapError(logPassiveError);
 #if (APPLICATION_DEBUGGING == true)
   std::println(stdout, "frame time: {}", lastFrameTime);
 #endif

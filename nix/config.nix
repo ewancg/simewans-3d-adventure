@@ -151,6 +151,7 @@ rec {
                 - "*-use-trailing-return-type"
                 - "*-named-parameter"
                 - "*-isolate-declaration"
+                - "*-macro-usage" # old habits die hard
               CheckOptions:
                 ${naming}.IgnoreNamespaces: std
                 ${naming}.ClassCase: CamelCase
