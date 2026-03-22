@@ -5,7 +5,7 @@ project(
   "${PROJECT_NAME}"
   VERSION 1.0
   LANGUAGES CXX)
-set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD 26)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES
@@ -13,6 +13,33 @@ set(CMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES
 
 option(BUILD_TESTS "Build all test targets from src/ and tests/" OFF)
 option(ENABLE_IPO "Enable IPO/LTO")
+
+function(compile_platform_shaders)
+  if(WIN32)
+    set(SHADER_TARGET_FORMATS dxbc dxbc-asm dxil dxil-asm spirv spirv-asm)
+  elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL "Darwin")
+    set(SHADER_TARGET_FORMATS metal metallib metallib-asm)
+  else()
+    set(SHADER_TARGET_FORMATS spirv spirv-asm)
+  endif()
+
+  # Build neural.slang-module and output to the output directory
+  set(SHADER_SOURCES vertex.slang fragment.slang pixel.slang)
+  foreach(FORMAT ${SHADER_TARGET_FORMATS})
+    foreach(SOURCE ${SHADER_SOURCES})
+      get_filename_component(SOURCE_BASENAME "${SOURCE}" NAME)
+      add_custom_command(
+        OUTPUT "${CMAKE_BINARY_DIR}/shaders"
+        COMMAND ${SLANG_COMPILER} ${SHADER_DEFINES} -target "${FORMAT}"
+                "${SOURCE}" -o "${SOURCE_BASENAME}"
+        DEPENDS ${SHADER_SOURCES} ${SLANG_COMPILER_DEPENDENCY}
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+        VERBATIM)
+      add_custom_target(shader-target ALL DEPENDS ${SOURCES})
+      set_target_properties(shader-target PROPERTIES FOLDER shaders)
+    endforeach()
+  endforeach()
+endfunction()
 
 function(create_main_executable TARGET)
   # --- Setup

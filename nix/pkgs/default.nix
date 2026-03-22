@@ -10,6 +10,7 @@
 , ninja
 , frozen-containers # contexpr STL-mimicking types
 , sdl3 # graphics, input
+, shader-slang # cross-platform shader compiler
 , miniaudio # audio playback, 3d spatialization
 , pkg-config # this and all of the following are for miniaudio
 , alsa-lib
@@ -33,6 +34,7 @@ let buildInputs = [
     gcc
     cmake
     ninja
+    shader-slang
   ];
 
   inherit buildInputs;

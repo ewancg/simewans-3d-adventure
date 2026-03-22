@@ -41,7 +41,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
   auto *stateBuf = std::aligned_alloc(std::max(sizeof(Application), Application::getHostPageSize()),
                                       sizeof(Application));
 
-  auto *app = new (stateBuf) Application();
+  auto *app = new (stateBuf) Application{};
   if (auto err = app->init(); err) {
     std::println(stderr, "Fatal error during app initialization: {}", err.string());
     return SDL_APP_FAILURE;

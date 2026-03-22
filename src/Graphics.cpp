@@ -118,7 +118,7 @@ Error Graphics::attachWindow(Window &t_windowIn) {
 
 template <IsSubsystemError T = Error> static constexpr T badCall(const std::string &t_msg) {
   return {GET_WINDOW_SWAPCHAIN_TEXTURE,
-          "graphics::get_swapchain_texture called without a " + t_msg};
+          std::string_view("graphics::get_swapchain_texture called without a " + t_msg)};
 }
 
 Error Graphics::getWindowSwapchainTexture(Window &t_windowIn, SDL_GPUTexture *t_textureOut) {

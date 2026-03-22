@@ -15,7 +15,7 @@ Error Input::onDestroy() {
 }
 
 Error Input::onUpdate() {
-  auto window = m_window.get();
+  auto &window = m_window.get();
   m_lastInputState = m_inputState;
 
   SDL_Event event;
@@ -67,7 +67,7 @@ Error Input::setMousePos(uint32_t t_x, uint32_t t_y) {
   return {};
 }
 Error Input::centerMousePos() {
-  auto window = m_window.get();
+  auto &window = m_window.get();
   auto *handle = window.getRawHandle();
   if (handle == nullptr) {
     return {SET_MOUSE_POS, mousePosErrMsg};

@@ -1,17 +1,16 @@
-
 #include <frozen/unordered_map.h>
 enum class EGPUShaderID : uint8_t { VERTEX, FRAGMENT, PIXEL, LENGTH };
 namespace shader_definitions {
 constexpr unsigned char vertex[] = {
-#embed "../../.out/shaders/vertex-bytecode"
+#embed "../../out/shaders/vertex-bytecode"
 };
 
 constexpr unsigned char fragment[] = {
-#embed "../../.out/shaders/fragment-bytecode"
+#embed "../../out/shaders/fragment-bytecode"
 };
 
 constexpr unsigned char pixel[] = {
-#embed "../../.out/shaders/pixel-bytecode"
+#embed "../../out/shaders/pixel-bytecode"
 };
 static constexpr std::array<std::pair<EGPUShaderID, std::span<const unsigned char>>,
                             uint8_t(EGPUShaderID::LENGTH)>
