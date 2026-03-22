@@ -36,8 +36,22 @@ Error Audio::onInit() {
           this) != MA_SUCCESS) {
     return {INIT, "could not enumerate audio devices"};
   }
+  return {};
+}
 
-  ma_device_notification *t_notification{};
+Error Audio::getShallowDevicesList(std::vector<std::string_view> &t_outputList) {
+  PASS_ERROR(ensureInitialized<AudioError>(*this, "audio device list queried"))
+  std::ranges::transform(m_playbackDeviceDescriptors.begin(), m_playbackDeviceDescriptors.end(),
+                         t_outputList.begin(), [](auto &t_device) -> std::string_view {
+                           return std::string_view(static_cast<const char *>(t_device.name));
+                         });
+  return {};
+}
+
+Error Audio::openDefaultDevice() { PASS_ERROR(openDevice(m_playbackDeviceDescriptors.begin())) }
+
+static Audio *audioContext{};
+void notificationCallback(const ma_device_notification *t_notification) {
   switch (t_notification->type) {
 #ifdef AUDIO_DEBUGGING
 #define LOG_AUDIO_EVENT(EVENT)                                                                     \
@@ -58,31 +72,20 @@ Error Audio::onInit() {
     LOG_AUDIO_EVENT("unlocked");
     break;
   case ma_device_notification_type_rerouted:
-    std::println("Playback rerouted from '{}' to '{}'", m_device->playback.name,
+    std::println("Playback rerouted from '{}' to '{}'", s_audioContext->getCurrentDeviceName(),
                  t_notification->pDevice->playback.name);
 #else
   case ma_device_notification_type_rerouted:
 #endif
-    m_restartPending = true;
+    if (audioContext != nullptr) {
+      audioContext->queueRestart();
+    }
     break;
   default:
     std::unreachable();
     break;
   }
-
-  return {};
-}
-
-Error Audio::getShallowDevicesList(std::vector<std::string_view> &t_outputList) {
-  PASS_ERROR(ensureInitialized<AudioError>(*this, "audio device list queried"))
-  std::ranges::transform(m_playbackDeviceDescriptors.begin(), m_playbackDeviceDescriptors.end(),
-                         t_outputList.begin(), [](auto &t_device) -> std::string_view {
-                           return std::string_view(static_cast<const char *>(t_device.name));
-                         });
-  return {};
-}
-
-Error Audio::openDefaultDevice(){PASS_ERROR(openDevice(m_playbackDeviceDescriptors.begin()))}
+};
 
 Error Audio::openDevice(const AudioDevice &t_inputDevice) {
   PASS_ERROR(ensureInitialized<AudioError>(*this, "audio device open attempted"))
@@ -95,10 +98,21 @@ Error Audio::openDevice(const AudioDevice &t_inputDevice) {
         ma_format_unknown, 0, 0, 0,
         ma_resample_algorithm_linear); // Format/channels/rate don't matter here. Later I want to
                                        // change this to use Lanczos just to flex
+    deviceConfig.notificationCallback = &notificationCallback;
   }
-  ma_device_init(&m_context, &deviceConfig, m_device);
+  if (ma_device_init(&m_context, &deviceConfig, m_device) != MA_SUCCESS) {
+    return {DEVICE_INIT, "could not initialize audio device"};
+  }
 }
-Error Audio::closeDevice(const AudioDevice &t_inputDevice) {}
+
+Error Audio::getCurrentDeviceName(std::string_view &t_output) {
+  t_output = std::string_view(static_cast<const char *>(m_device->playback.name));
+}
+
+void Audio::queueRestart() { this->m_restartPending = true; }
+
+Error Audio::closeDevice(const AudioDevice &t_inputDevice) { // TODO
+}
 
 Error Audio::onDestroy() {
   PASS_ERROR(closeDeviceInternal(m_device))
