@@ -1,5 +1,6 @@
 #include <frozen/unordered_map.h>
 enum class EGPUShaderID : uint8_t { VERTEX, FRAGMENT, PIXEL, LENGTH };
+// NOLINTBEGIN(*-avoid-c-arrays, *-extensions)
 namespace shader_definitions {
 constexpr unsigned char vertex[] = {
 #embed "../../out/shaders/vertex-bytecode"
@@ -20,7 +21,8 @@ static constexpr std::array<std::pair<EGPUShaderID, std::span<const unsigned cha
          {EGPUShaderID::PIXEL, {static_cast<const unsigned char *>(pixel), sizeof(pixel)}}}};
 
 } // namespace shader_definitions
-
+// NOLINTEND(*-avoid-c-arrays, *-extensions)
+//
 static constexpr auto shaders = frozen::make_unordered_map(shader_definitions::index);
 class GPUShader {
   SDL_GPUDevice *m_device{};
