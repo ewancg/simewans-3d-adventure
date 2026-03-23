@@ -18,17 +18,16 @@ Error Input::onUpdate() {
   auto &window = m_window.get();
   m_lastInputState = m_inputState;
 
-  SDL_Event event;
-  while (SDL_PollEvent(&event)) {
-    if (event.type == SDL_EVENT_QUIT) {
+  SDL_Event evt;
+  while (SDL_PollEvent(&evt)) {
+    if (evt.type == SDL_EVENT_QUIT) {
       window.setTicking(false).mapError(logPassiveError);
-    } else if (event.type >= SDL_EVENT_WINDOW_SHOWN && event.type <= SDL_EVENT_KEY_DOWN) {
-      window.event(event.window).mapError(logPassiveError);
-    } else if (event.type >= SDL_EVENT_KEY_DOWN && event.type <= SDL_EVENT_MOUSE_MOTION) {
-      handleKeyboardEvent(event.key);
-    } else if (event.type >= SDL_EVENT_MOUSE_MOTION &&
-               event.type <= SDL_EVENT_JOYSTICK_AXIS_MOTION) {
-      handleMouseEvent(event).mapError(logPassiveError);
+    } else if (evt.type >= SDL_EVENT_WINDOW_SHOWN && evt.type <= SDL_EVENT_KEY_DOWN) {
+      window.event(evt.window).mapError(logPassiveError);
+    } else if (evt.type >= SDL_EVENT_KEY_DOWN && evt.type <= SDL_EVENT_MOUSE_MOTION) {
+      handleKeyboardEvent(evt.key);
+    } else if (evt.type >= SDL_EVENT_MOUSE_MOTION && evt.type <= SDL_EVENT_JOYSTICK_AXIS_MOTION) {
+      handleMouseEvent(evt).mapError(logPassiveError);
     }
   }
   return {};
@@ -80,7 +79,7 @@ Error Input::centerMousePos() {
     return {SET_MOUSE_POS, error.string()};
   }
 
-  SDL_WarpMouseInWindow(handle, static_cast<float>(width) / 2.F, static_cast<float>(height) / 2.F);
+  SDL_WarpMouseInWindow(handle, MIDDLE_F(width), MIDDLE_F(height));
   return {};
 }
 bool Input::mappingIsPressed(EInputMapping t_in) { return m_inputState[t_in]; }

@@ -9,7 +9,8 @@
 #define ERROR_ENTRIES(E)                                                                           \
   E(INIT, "initializing the audio subsystem")                                                      \
   E(DEVICE_INIT, "initializing the audio device")                                                  \
-  E(DEVICE_UNINIT, "uninitializing the audio device")
+  E(DEVICE_UNINIT, "uninitializing the audio device")                                              \
+  E(DEVICE_NOTIFY, "issuing an audio device notification")
 DEFINE_DERIVED_ERROR_TYPES(Audio, Subsystem, ERROR_ENTRIES);
 #undef ERROR_ENTRIES
 

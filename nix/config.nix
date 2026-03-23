@@ -152,6 +152,7 @@ rec {
                 - "*-named-parameter"
                 - "*-isolate-declaration"
                 - "*-macro-usage" # old habits die hard
+                - "*-easily-swappable-parameters"
               CheckOptions:
                 ${naming}.IgnoreNamespaces: std
                 ${naming}.ClassCase: CamelCase

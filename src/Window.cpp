@@ -5,12 +5,12 @@ using Error = WindowError;
 
 // NOLINTBEGIN(cppcoreguidelines-narrowing-conversions)
 Error Window::onInit() {
-  auto main_scale = SDL_GetDisplayContentScale(SDL_GetPrimaryDisplay());
+  auto primaryDisplayScale = SDL_GetDisplayContentScale(SDL_GetPrimaryDisplay());
 
-  auto *handle =
-      SDL_CreateWindow(m_name.c_str(), static_cast<int>(static_cast<float>(m_width) * main_scale),
-                       static_cast<int>(static_cast<float>(m_height) * main_scale),
-                       SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIDDEN | SDL_WINDOW_HIGH_PIXEL_DENSITY);
+  auto *handle = SDL_CreateWindow(
+      m_name.c_str(), static_cast<int>(static_cast<float>(m_width) * primaryDisplayScale),
+      static_cast<int>(static_cast<float>(m_height) * primaryDisplayScale),
+      SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIDDEN | SDL_WINDOW_HIGH_PIXEL_DENSITY);
   if (handle == nullptr) {
     return {INIT, SDL_GetError()};
   }
@@ -23,11 +23,15 @@ Error Window::onInit() {
 }
 // NOLINTEND
 
-Error Window::onDestroy() { return {}; }
+Error Window::onDestroy() {
+  (void)this;
+  return {};
+}
 
 Error Window::onUpdate() {
   // i don't know what we would need to update here rn
   // may remove method
+  (void)this;
   return {};
 }
 
@@ -74,8 +78,8 @@ Error Window::resize(uint32_t t_width, uint32_t t_height) {
   return {};
 }
 
-Error Window::event(const SDL_WindowEvent &t_event) {
-  switch (t_event.type) {
+Error Window::event(const SDL_WindowEvent &t_evt) {
+  switch (t_evt.type) {
   case SDL_EVENT_WINDOW_FOCUS_LOST:
     m_focused = false;
     break;
@@ -83,8 +87,8 @@ Error Window::event(const SDL_WindowEvent &t_event) {
     m_focused = true;
     break;
   case SDL_EVENT_WINDOW_RESIZED:
-    m_width = t_event.data1;
-    m_height = t_event.data2;
+    m_width = t_evt.data1;
+    m_height = t_evt.data2;
     // glViewport(0, 0, ctx.width, ctx.height);
     m_resized = true;
     break;

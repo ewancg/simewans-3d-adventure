@@ -10,8 +10,8 @@
 DEFINE_DERIVED_ERROR_TYPES(Window, Subsystem, ERROR_ENTRIES);
 #undef ERROR_ENTRIES
 
-constexpr int WINDOW_START_WIDTH = 960;
-constexpr int WINDOW_START_HEIGHT = 540;
+#define WINDOW_START_WIDTH 960
+#define WINDOW_START_HEIGHT 540
 
 class Window : public Subsystem<WindowError> {
   friend class Subsystem;
@@ -28,11 +28,11 @@ public:
   /// Demand focus on the window
   Error raise();
   /// Move the window
-  Error move(uint32_t x_pos, uint32_t y_pos);
+  Error move(uint32_t t_x, uint32_t t_y);
   /// Resize the window
-  Error resize(uint32_t width, uint32_t height);
+  Error resize(uint32_t t_width, uint32_t t_height);
   /// Process incoming `SDL_WindowEvent`s
-  Error event(const SDL_WindowEvent &event);
+  Error event(const SDL_WindowEvent &t_evt);
   // Raw pointer is only for interfacing with SDL
   SDL_Window *getRawHandle();
 

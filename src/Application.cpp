@@ -32,8 +32,7 @@ Error Application::onDestroy() {
 
 Error Application::onUpdate() {
   SDL_GPUTexture *tex{};
-  m_graphics.getWindowSwapchainTexture(m_window, tex).mapError(logPassiveError);
-  m_graphics.beginFrame(tex).mapError(logPassiveError);
+  m_graphics.beginFrame(m_window).mapError(logPassiveError);
 
   m_audio.update().mapError(logPassiveError);
   m_graphics.update().mapError(logPassiveError);

@@ -179,3 +179,5 @@ private:                                                                        
 #define NO_COPY_MOVE_OR_ASSIGN(TYPE, NOCOPY_REASON, NOMOVE_REASON)                                 \
   NO_COPY_OR_ASSIGN(TYPE, NOCOPY_REASON)                                                           \
   NO_MOVE_OR_ASSIGN(TYPE, NOMOVE_REASON)
+
+#define MIDDLE_F(INPUT) static_cast<float>(INPUT) / 2.F

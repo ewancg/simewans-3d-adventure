@@ -30,7 +30,7 @@ class Graphics : public Subsystem<GraphicsError> {
   SUBSYSTEM(Graphics)
 public:
   /// Begins render pass
-  Error beginFrame(SDL_GPUTexture *t_textureOut);
+  Error beginFrame(Window &t_windowIn);
   /// Ends render pass, submits command buffer, returns frame time
   Error endFrame(double &t_frameTimeOut);
 
@@ -51,8 +51,10 @@ private:
   std::array<SDL_GPUCommandBuffer *, ECommandBufferRole::CB_LENGTH> m_commandBuffers{};
   std::array<SDL_GPUTransferBuffer *, ETransferBufferRole::TB_LENGTH> m_transferBuffers{};
   std::shared_ptr<SDL_GPUDevice> m_device;
-  SDL_GPUTransferBuffer *m_upload_buffer;
-  SDL_GPUTransferBuffer *m_download_buffer;
+  SDL_GPUTransferBuffer *m_uploadBuffer{};
+  SDL_GPUTransferBuffer *m_downloadBuffer{};
+
+  SDL_GPUTexture *m_windowTexture{};
 
   uint64_t m_lastFrameTime{};
   // Transient handle that only lives between beginFrame and endFrame; nullptr all other times

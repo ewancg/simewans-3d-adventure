@@ -1,4 +1,5 @@
 #include "Audio.h"
+#include "common.h"
 #include <algorithm>
 #include <string_view>
 #include <utility>
@@ -47,58 +48,70 @@ Error Audio::getShallowDevicesList(std::vector<std::string_view> &t_outputList) 
   return {};
 }
 
-Error Audio::openDefaultDevice() { PASS_ERROR(openDevice(m_playbackDeviceDescriptors.begin())) }
-
-static Audio *audioContext{};
-void notificationCallback(const ma_device_notification *t_notification) {
-  switch (t_notification->type) {
-#ifdef AUDIO_DEBUGGING
-#define LOG_AUDIO_EVENT(EVENT)                                                                     \
-  std::println("Playback " EVENT " on '{}'", t_notification->pDevice->playback.name)
-  case ma_device_notification_type_started:
-    LOG_AUDIO_EVENT("started");
-    break;
-  case ma_device_notification_type_stopped:
-    LOG_AUDIO_EVENT("stopped");
-    break;
-  case ma_device_notification_type_interruption_began:
-    LOG_AUDIO_EVENT("interrupted");
-    break;
-  case ma_device_notification_type_interruption_ended:
-    LOG_AUDIO_EVENT("resumed from interruption");
-    break;
-  case ma_device_notification_type_unlocked:
-    LOG_AUDIO_EVENT("unlocked");
-    break;
-  case ma_device_notification_type_rerouted:
-    std::println("Playback rerouted from '{}' to '{}'", s_audioContext->getCurrentDeviceName(),
-                 t_notification->pDevice->playback.name);
-#else
-  case ma_device_notification_type_rerouted:
-#endif
-    if (audioContext != nullptr) {
-      audioContext->queueRestart();
-    }
-    break;
-  default:
-    std::unreachable();
-    break;
-  }
-};
+Error Audio::openDefaultDevice(){PASS_ERROR(openDevice(m_playbackDeviceDescriptors.begin()))}
 
 Error Audio::openDevice(const AudioDevice &t_inputDevice) {
   PASS_ERROR(ensureInitialized<AudioError>(*this, "audio device open attempted"))
 
-  auto deviceConfig = ma_device_config{};
-  // This block is equivalent to ma_device_config_init
-  {
-    deviceConfig.deviceType = ma_device_type_playback;
-    deviceConfig.resampling = ma_resampler_config_init(
-        ma_format_unknown, 0, 0, 0,
-        ma_resample_algorithm_linear); // Format/channels/rate don't matter here. Later I want to
-                                       // change this to use Lanczos just to flex
-    deviceConfig.notificationCallback = &notificationCallback;
-  }
+  auto deviceConfig = ma_device_config{
+      // This block is equivalent to ma_device_config_init
+      .deviceType = ma_device_type_playback,
+      .sampleRate = {},
+      .periods = {},
+      .noClip = {},
+      .dataCallback = {},
+      .notificationCallback =
+          [](auto *t_notification) {
+            auto *audioContext = static_cast<Audio *>(t_notification->pDevice->pUserData);
+            if (audioContext == nullptr) {
+              logPassiveError(AudioError{
+                  DEVICE_NOTIFY,
+                  "ma_device_config's user data is no longer a pointer to its parent Audio *"});
+              return;
+            }
+            switch (t_notification->type) {
+#ifdef AUDIO_DEBUGGING
+#define LOG_AUDIO_EVENT(EVENT)                                                                     \
+  std::println("Playback " EVENT " on '{}'", t_notification->pDevice->playback.name)
+            case ma_device_notification_type_started:
+              LOG_AUDIO_EVENT("started");
+              break;
+            case ma_device_notification_type_stopped:
+              LOG_AUDIO_EVENT("stopped");
+              break;
+            case ma_device_notification_type_interruption_began:
+              LOG_AUDIO_EVENT("interrupted");
+              break;
+            case ma_device_notification_type_interruption_ended:
+              LOG_AUDIO_EVENT("resumed from interruption");
+              break;
+            case ma_device_notification_type_unlocked:
+              LOG_AUDIO_EVENT("unlocked");
+              break;
+            case ma_device_notification_type_rerouted:
+              std::println("Playback rerouted from '{}' to '{}'",
+                           audioContext->getCurrentDeviceName(),
+                           t_notification->pDevice->playback.name);
+#else
+            case ma_device_notification_type_rerouted:
+#endif
+              audioContext->queueRestart();
+              break;
+            default:
+              std::unreachable();
+              break;
+            }
+          },
+      .pUserData = this,
+      .resampling = ma_resampler_config_init(
+          ma_format_unknown, 0, 0, 0,
+          ma_resample_algorithm_linear), // Format/channels/rate don't matter here. Lanczos?
+      .playback =
+          {
+              .pDeviceID = &t_inputDevice->id,
+          },
+  };
+
   if (ma_device_init(&m_context, &deviceConfig, m_device) != MA_SUCCESS) {
     return {DEVICE_INIT, "could not initialize audio device"};
   }

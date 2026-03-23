@@ -14,6 +14,7 @@ Diagnostics:
       - "*-named-parameter"
       - "*-isolate-declaration"
       - "*-macro-usage" # old habits die hard
+      - "*-easily-swappable-parameters"
     CheckOptions:
       readability-identifier-naming.IgnoreNamespaces: std
       readability-identifier-naming.ClassCase: CamelCase

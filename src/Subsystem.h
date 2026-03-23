@@ -36,6 +36,7 @@ protected:
 
 public:
   Subsystem() = default;
+  ~Subsystem() = default;
   NO_COPY_MOVE_OR_ASSIGN(Subsystem, "subsystems are unique and can't be copied",
                          "subsystems can't be moved")
   // uses "deducing this" to call the init callbacks on the real type for the current instance

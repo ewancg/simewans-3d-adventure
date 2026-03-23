@@ -23,8 +23,8 @@
 // IWYU pragma: end_keep
 /// ----- Global project defines -----
 
-constexpr auto NS_PER_SEC = 1000000000.0;
-constexpr auto NSPF_60FPS = (NS_PER_SEC / 60.);
+#define NS_PER_SEC 1000000000.0
+#define NSPF_60FPS (NS_PER_SEC / 60.)
 #include "macros.h"
 
 /// ----- Global types -----

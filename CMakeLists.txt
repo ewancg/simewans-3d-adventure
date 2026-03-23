@@ -12,7 +12,7 @@ set(CMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES
     ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES})
 
 option(BUILD_TESTS "Build all test targets from src/ and tests/" OFF)
-option(ENABLE_IPO "Enable IPO/LTO")
+option(ENABLE_IPO "Enable IPO/LTO" "")
 
 function(compile_platform_shaders)
   if(WIN32)
@@ -58,13 +58,24 @@ function(create_main_executable TARGET)
 
   get_property(DEBUG_CONFIGS GLOBAL PROPERTY DEBUG_CONFIGURATIONS)
   check_sanitizers_enabled()
-  if(SANITIZERS_ENABLED
-     AND NOT OPTIMIZATION_LEVEL
-     AND CMAKE_BUILD_TYPE IN_LIST DEBUG_CONFIGS)
-    set(OPTIMIZATION_LEVEL "-O1")
+  if(CMAKE_BUILD_TYPE IN_LIST DEBUG_CONFIGS)
+    if(SANITIZERS_ENABLED)
+      if("" STREQUAL "${OPTIMIZATION_LEVEL}")
+        set(OPTIMIZATION_LEVEL "-O1")
+      endif()
+    else()
+      set(OPTIMIZATION_LEVEL "-O0")
+    endif()
+  else()
+    if("" STREQUAL "${OPTIMIZATION_LEVEL}")
+      set(OPTIMIZATION_LEVEL "-O3")
+    endif()
+    if("" STREQUAL "${ENABLE_IPO}")
+      set(ENABLE_IPO ON)
+    endif()
   endif()
 
-  if(ENABLE_IPO)
+  if(NOT "" STREQUAL "${ENABLE_IPO}" AND NOT "OFF" STREQUAL ${ENABLE_IPO})
     include(CheckIPOSupported)
     check_ipo_supported(RESULT result OUTPUT output)
     if(result)
