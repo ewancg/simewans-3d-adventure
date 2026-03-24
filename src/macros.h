@@ -180,14 +180,12 @@ private:                                                                        
   NO_COPY_OR_ASSIGN(TYPE, NOCOPY_REASON)                                                           \
   NO_MOVE_OR_ASSIGN(TYPE, NOMOVE_REASON)
 
-#define APPLICATION_PARENT(NAME)                                                                   \
-  SUBSYSTEM(NAME)                                                                                  \
+#define APPLICATION_PARENT(NAME, CTOR)                                                             \
 public:                                                                                            \
   NO_COPY_MOVE_OR_ASSIGN(NAME, "Application subsystems can't be copied",                           \
                          "Application subsystems can't be moved")                                  \
   Application & m_app;                                                                             \
-  explicit NAME(Application &t_app) : m_app(t_app) {}                                              \
-  ~NAME() = default;                                                                               \
+  explicit NAME(Application &t_app) : m_app(t_app) CTOR ~NAME() = default;                         \
                                                                                                    \
 private:
 

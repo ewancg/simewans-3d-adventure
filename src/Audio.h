@@ -1,9 +1,13 @@
 #pragma once
 #include "Subsystem.h"
 #include "miniaudio/miniaudio.h"
+#include <atomic>
 
 #if defined(AUDIO_DEBUGGING) && AUDIO_DEBUGGING != false
 #define AUDIO_DEBUGGING
+#define AUDIO_DEBUG_LOG(...) std::println("[audio] info\t:{}", __VA_ARGS__)
+#else
+#define AUDIO_DEBUG_LOG(...) (void)(0)
 #endif
 
 #define ERROR_ENTRIES(E)                                                                           \
@@ -16,7 +20,8 @@ DEFINE_DERIVED_ERROR_TYPES(Audio, Subsystem, ERROR_ENTRIES);
 
 /// This class handles playback only as that's all the game cares about for now
 class Audio : public Subsystem<AudioError> {
-  APPLICATION_PARENT(Audio)
+  SUBSYSTEM(Audio)
+  APPLICATION_PARENT(Audio, {})
 
 public:
   using AudioDevice = std::vector<ma_device_info>::iterator;
@@ -32,11 +37,14 @@ public:
   void queueRestart();
 
 private:
+  struct CallbackShared {
+    std::atomic_bool error = false;
+  } m_dataCallbackState;
   std::optional<ma_context> m_context;
   ma_device *m_device{};
   std::vector<ma_device_info> m_playbackDeviceDescriptors;
 
-  bool m_restartPending{};
+  bool m_restartPending{true};
 
   static Error closeDeviceInternal(ma_device *t_device);
 

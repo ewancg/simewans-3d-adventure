@@ -1,15 +1,13 @@
 #pragma once
+#include "Application.h"
 #include "Graphics/GPUBuffer.h"
 #include "Graphics/GPUShader.h"
 #include "Graphics/GPUTexture.h"
 #include "Subsystem.h"
 #include "Window.h"
-
 #ifndef GRAPHICS_DEBUGGING
 #define GRAPHICS_DEBUGGING false
 #endif
-
-#define NULL_BRUSH_COLOR {.r = 0.6F, .g = 0.2F, .b = 0.2F}
 
 #define ERROR_ENTRIES(E)                                                                           \
   E(INIT, "initializing the graphics subsystem")                                                   \
@@ -27,7 +25,8 @@ DEFINE_DERIVED_ERROR_TYPES(Graphics, Subsystem, ERROR_ENTRIES);
 // TODO: create a GPU_Pipeline struct
 
 class Graphics : public Subsystem<GraphicsError> {
-  APPLICATION_PARENT(Graphics)
+  SUBSYSTEM(Graphics)
+  APPLICATION_PARENT(Graphics, {})
 
 public:
   /// Begins render pass

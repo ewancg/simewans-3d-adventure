@@ -105,6 +105,7 @@ function(create_main_executable TARGET)
   if(WIN32 AND (MSYS OR MINGW))
     list(APPEND ARG_LIBRARIES "stdc++exp")
   endif()
+  set(glaze_ENABLE_REFLECTION26 ON)
   target_link_libraries(
     "${TARGET}"
     PRIVATE #
@@ -112,16 +113,19 @@ function(create_main_executable TARGET)
             asound
             jack
             pulse
-            PkgConfig::miniaudio
-            frozen::frozen # constexpr STL-mimicking types
+            glaze::glaze
+            frozen::frozen
             SDL3::Headers
-            SDL3::SDL3)
+            SDL3::SDL3
+            PkgConfig::miniaudio)
   # --- Set #defines
   target_compile_definitions("${TARGET}" PRIVATE #
                                                  ${ARG_DEFINES})
 
   # --- Set non-define compile flags
-  set(FLAGS ${ARG_FLAGS} "${OPTIMIZATION_LEVEL}" "-march=native")
+  set(FLAGS ${ARG_FLAGS} "${OPTIMIZATION_LEVEL}" "-march=native"
+      # "-freflection" # GCC 16 not available in nixpkgs yet
+  )
   target_compile_options("${TARGET}" PRIVATE ${FLAGS})
   target_link_options("${TARGET}" PRIVATE ${FLAGS})
 
@@ -137,6 +141,7 @@ include(FetchContent)
 include(Sanitizers)
 find_package(SDL3 REQUIRED CONFIG)
 find_package(frozen REQUIRED CONFIG)
+find_package(glaze REQUIRED CONFIG)
 cmake_pkg_config(IMPORT miniaudio "0.11.24" REQUIRED)
 
 if(${BUILD_TESTS})

@@ -8,6 +8,8 @@
 , cmake
 , gcc
 , ninja
+, glaze # de/serialization of toml for local configs, messagepack for network traffic
+, openssl # for glaze
 , frozen-containers # contexpr STL-mimicking types
 , sdl3 # graphics, input
 , shader-slang # cross-platform shader compiler
@@ -18,12 +20,13 @@
 , libjack2
 }:
 let buildInputs = [
+  glaze
+  frozen-containers
   sdl3.dev
   miniaudio.dev
   alsa-lib.dev
   libpulseaudio.dev
   libjack2.dev
-  frozen-containers
 ];
  in stdenv.mkDerivation
 {
@@ -35,6 +38,7 @@ let buildInputs = [
     cmake
     ninja
     shader-slang
+    openssl
   ];
 
   inherit buildInputs;

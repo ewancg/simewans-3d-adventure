@@ -14,7 +14,8 @@ DEFINE_DERIVED_ERROR_TYPES(Window, Subsystem, ERROR_ENTRIES);
 #define WINDOW_START_HEIGHT 540
 
 class Window : public Subsystem<WindowError> {
-  APPLICATION_PARENT(Window)
+  SUBSYSTEM(Window)
+  APPLICATION_PARENT(Window, {})
 
   uint32_t m_y{}, m_x{};
   DEFINE_PROPERTY(uint32_t, m_width, getWidth, setWidth, 0);

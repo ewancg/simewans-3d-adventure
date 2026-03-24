@@ -1,4 +1,6 @@
 #include "Application.h"
+#include "Application/Config.h"
+
 using enum EApplicationError;
 using Error = ApplicationError;
 
@@ -10,23 +12,25 @@ using Error = ApplicationError;
   }
 
 Error Application::onInit() {
-  SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_NAME_STRING, "Game Game");
-  SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_VERSION_STRING, "1.0");
-  SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_IDENTIFIER_STRING, "com.simewan.adventure");
-  SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_CREATOR_STRING, "sim & ewan");
-  SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_COPYRIGHT_STRING, "sim & ewan 2026");
-  SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_URL_STRING, "");
-  SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_TYPE_STRING, "game");
+  m_config = std::make_unique(new Config(*this));
+
+  SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_NAME_STRING, metadata.name);
+  SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_VERSION_STRING, metadata.version);
+  SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_IDENTIFIER_STRING, metadata.identifier);
+  SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_CREATOR_STRING, metadata.author);
+  SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_COPYRIGHT_STRING, metadata.copyright);
+  SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_URL_STRING, metadata.url);
+  SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_TYPE_STRING, metadata.type);
 
   /// Order is very important: input is initialized with a reference to window
-  PROPAGATE_ERROR(INIT, m_audio.init());
-  PROPAGATE_ERROR(INIT, m_graphics.init());
-  PROPAGATE_ERROR(INIT, m_window.init());
-  PROPAGATE_ERROR(INIT, m_input.init());
+  PROPAGATE_ERROR(INIT, audio.init());
+  PROPAGATE_ERROR(INIT, graphics.init());
+  PROPAGATE_ERROR(INIT, window.init());
+  PROPAGATE_ERROR(INIT, input.init());
 
-  PROPAGATE_ERROR(INIT, m_graphics.attachWindow(m_window));
+  PROPAGATE_ERROR(INIT, graphics.attachWindow(window));
 
-  m_window.show().mapError(logPassiveError);
+  window.show().mapError(logPassiveError);
 
   m_isTicking = true;
 
@@ -35,24 +39,24 @@ Error Application::onInit() {
 
 Error Application::onDestroy() {
   /// Order is very important: reverse of initialization order
-  PROPAGATE_ERROR(DESTROY, m_input.destroy());
-  PROPAGATE_ERROR(DESTROY, m_window.destroy());
-  PROPAGATE_ERROR(DESTROY, m_graphics.destroy());
-  PROPAGATE_ERROR(DESTROY, m_audio.destroy());
+  PROPAGATE_ERROR(DESTROY, input.destroy());
+  PROPAGATE_ERROR(DESTROY, window.destroy());
+  PROPAGATE_ERROR(DESTROY, graphics.destroy());
+  PROPAGATE_ERROR(DESTROY, audio.destroy());
   return {};
 }
 
 Error Application::onUpdate() {
   SDL_GPUTexture *tex{};
-  m_graphics.beginFrame(m_window).mapError(logPassiveError);
+  graphics.beginFrame(window).mapError(logPassiveError);
 
-  m_audio.update().mapError(logPassiveError);
-  m_graphics.update().mapError(logPassiveError);
-  m_window.update().mapError(logPassiveError);
-  m_input.update().mapError(logPassiveError);
+  audio.update().mapError(logPassiveError);
+  graphics.update().mapError(logPassiveError);
+  window.update().mapError(logPassiveError);
+  input.update().mapError(logPassiveError);
 
   double lastFrameTime{};
-  m_graphics.endFrame(lastFrameTime).mapError(logPassiveError);
+  graphics.endFrame(lastFrameTime).mapError(logPassiveError);
 #if (APPLICATION_DEBUGGING == true)
   std::println(stdout, "frame time: {}", lastFrameTime);
 #endif
@@ -78,7 +82,6 @@ Error Application::onEvent(Event &t_evt) {
   if (!t_evt.first) {
     switch (t_evt.second.type) {
     case SDL_EVENT_QUIT:
-      std::println("supposedly quitting");
       PASS_ERROR(setTicking(false))
       break;
 

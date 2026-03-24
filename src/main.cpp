@@ -64,6 +64,10 @@ SDL_AppResult SDL_AppIterate(void *t_appState) {
     return SDL_APP_FAILURE;
   }
   if (app->isInitialized() && !ticking) {
+    if (auto err = app->destroy(); err) {
+      std::println(stderr, "Error during shutdown ({})", err.string());
+      return SDL_APP_FAILURE;
+    }
     return SDL_APP_SUCCESS;
   }
   if (auto err = app->update(); err) {

@@ -24,8 +24,7 @@
 /// ----- Global project defines -----
 
 // Forward declare for parent of subsystems without cyclic dependency
-class Application;
-class ApplicationError;
+class Config;
 
 #define NS_PER_SEC 1000000000.0
 #define NSPF_60FPS (NS_PER_SEC / 60.)
