@@ -10,13 +10,25 @@ using Error = ApplicationError;
   }
 
 Error Application::onInit() {
+  SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_NAME_STRING, "Game Game");
+  SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_VERSION_STRING, "1.0");
+  SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_IDENTIFIER_STRING, "com.simewan.adventure");
+  SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_CREATOR_STRING, "sim & ewan");
+  SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_COPYRIGHT_STRING, "sim & ewan 2026");
+  SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_URL_STRING, "");
+  SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_TYPE_STRING, "game");
+
   /// Order is very important: input is initialized with a reference to window
   PROPAGATE_ERROR(INIT, m_audio.init());
   PROPAGATE_ERROR(INIT, m_graphics.init());
   PROPAGATE_ERROR(INIT, m_window.init());
   PROPAGATE_ERROR(INIT, m_input.init());
 
+  PROPAGATE_ERROR(INIT, m_graphics.attachWindow(m_window));
+
   m_window.show().mapError(logPassiveError);
+
+  m_isTicking = true;
 
   return {};
 }
@@ -44,6 +56,74 @@ Error Application::onUpdate() {
 #if (APPLICATION_DEBUGGING == true)
   std::println(stdout, "frame time: {}", lastFrameTime);
 #endif
+  return {};
+}
+
+Error Application::onEvent(Event &t_evt) {
+
+  //    window.setTicking(false).mapError(logPassiveError);
+  //    window.event(evt.window).mapError(logPassiveError);
+
+  // TODO: process in parallel with corral
+  for (const auto &sub : eventSubscriptions) {
+    if (t_evt.second.type >= sub.second.first && t_evt.second.type <= sub.second.last) {
+      sub.first(t_evt).mapError(logPassiveError);
+    }
+  }
+
+  // Give subscribers a chance to handle application events (e.g. save before quit)
+  // Since above runs in parallel, consumption of the event won't affect whether it's called for
+  // remaining subsystems (all subscribers still act on it regardless of which gets the first
+  // chance)
+  if (!t_evt.first) {
+    switch (t_evt.second.type) {
+    case SDL_EVENT_QUIT:
+      std::println("supposedly quitting");
+      PASS_ERROR(setTicking(false))
+      break;
+
+    case SDL_EVENT_SYSTEM_THEME_CHANGED:
+      std::println("wdym SDL_EVENT_SYSTEM_THEME_CHANGED");
+      break;
+    case SDL_EVENT_LOCALE_CHANGED:
+      std::println("wdym SDL_EVENT_LOCALE_CHANGED");
+      break;
+    case SDL_EVENT_KEYMAP_CHANGED:
+      std::println("wdym SDL_EVENT_KEYMAP_CHANGED");
+      break;
+    case SDL_EVENT_KEYBOARD_ADDED:
+      std::println("wdym SDL_EVENT_KEYBOARD_ADDED");
+      break;
+    case SDL_EVENT_KEYBOARD_REMOVED:
+      std::println("wdym SDL_EVENT_KEYBOARD_REMOVED");
+      break;
+    case SDL_EVENT_CLIPBOARD_UPDATE:
+      std::println("wdym SDL_EVENT_CLIPBOARD_UPDATE");
+      break;
+    case SDL_EVENT_DROP_FILE:
+      std::println("wdym SDL_EVENT_DROP_FILE");
+      break;
+    case SDL_EVENT_DROP_TEXT:
+      std::println("wdym SDL_EVENT_DROP_TEXT");
+      break;
+    case SDL_EVENT_DROP_BEGIN:
+      std::println("wdym SDL_EVENT_DROP_BEGIN");
+      break;
+    case SDL_EVENT_DROP_COMPLETE:
+      std::println("wdym SDL_EVENT_DROP_COMPLETE");
+      break;
+    case SDL_EVENT_DROP_POSITION:
+      std::println("wdym SDL_EVENT_DROP_POSITION");
+      break;
+      std::println("unimplemented feature requested");
+      break;
+    default:
+#if (APPLICATION_DEBUGGING == true)
+      std::println("event dropped {}", t_evt.second.type);
+#endif
+      return {};
+    }
+  }
   return {};
 }
 

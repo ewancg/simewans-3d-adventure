@@ -26,7 +26,7 @@ private:
   using enum ESubsystemError;
   bool m_isInitialized{};
 
-  std::vector<std::reference_wrapper<const std::function<Error()>>> m_pending_deletion_callbacks;
+  std::vector<std::reference_wrapper<const std::function<Error()>>> m_pendingDeletionCallbacks;
 
 protected:
   /// For the child class to implement
@@ -60,7 +60,7 @@ public:
     PASS_ERROR(ensureInitialized<Error>(t_self, "subsystem update called"))
     return t_self.onUpdate();
     // Execute deferred deletions
-    auto batch = std::move(t_self.m_pending_deletion_callbacks);
+    auto batch = std::move(t_self.m_pendingDeletionCallbacks);
     for (auto &deleter : batch) {
       auto err = deleter();
       if (err) {
@@ -79,7 +79,7 @@ public:
     static_assert(
         std::has_virtual_destructor_v<T> || std::is_final_v<T>,
         "A Subsystem cannot manage the lifetime of an item without a virtual destructor.");
-    m_pending_deletion_callbacks.push_back(std::reference_wrapper(t_deleterFn));
+    m_pendingDeletionCallbacks.push_back(std::reference_wrapper(t_deleterFn));
   }
   template <typename T> void deleteAfterFrame(std::unique_ptr<T> t_object) {
     deleteAfterFrame(t_object.release());

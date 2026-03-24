@@ -76,8 +76,13 @@ enum EInputMapping : uint8_t {
 
 class Input : public Subsystem<InputError> {
   SUBSYSTEM(Input)
+  Application &m_app;
+  Window &m_window;
+
 public:
-  explicit Input(Window &t_window) : m_window(t_window) {}
+  NO_COPY_MOVE_OR_ASSIGN(Input, "", "")
+  explicit Input(Application &t_app, Window &t_window) : m_app(t_app), m_window(t_window) {}
+  ~Input() = default;
   /// Checks if the input is currently down
   bool mappingIsPressed(EInputMapping t_in);
   /// Checks if the input is currently down, and was not last frame
@@ -91,15 +96,14 @@ private:
   struct MouseData {
     float x, y;
     float xm, ym;
-  } m_mouse_data{};
+  } m_mouseData{};
   std::bitset<EInputMapping::LENGTH> m_inputState{0};
   std::bitset<EInputMapping::LENGTH> m_lastInputState{0};
-  std::reference_wrapper<Window> m_window;
 
   static bool getKeyState(const SDL_KeyboardEvent &t_evt);
-  void handleKeyboardEvent(const SDL_KeyboardEvent &t_evt);
-  void handleMouseButtonEvent(const SDL_MouseButtonEvent &t_evt);
-  Error handleMouseEvent(const SDL_Event &t_evt);
+  ApplicationError keyboardEvent(Event &t_evt);
+  ApplicationError mouseButtonEvent(Event &t_evt);
+  ApplicationError mouseMotionEvent(Event &t_evt);
 };
 
 // clang-format off

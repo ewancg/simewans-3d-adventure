@@ -14,32 +14,7 @@ DEFINE_DERIVED_ERROR_TYPES(Window, Subsystem, ERROR_ENTRIES);
 #define WINDOW_START_HEIGHT 540
 
 class Window : public Subsystem<WindowError> {
-  friend class Subsystem;
-
-public:
-  using Error = WindowError;
-
-  using Mama = Subsystem<Error>;
-
-  /// Show the window
-  Error show();
-  /// Close the window
-  Error close();
-  /// Demand focus on the window
-  Error raise();
-  /// Move the window
-  Error move(uint32_t t_x, uint32_t t_y);
-  /// Resize the window
-  Error resize(uint32_t t_width, uint32_t t_height);
-  /// Process incoming `SDL_WindowEvent`s
-  Error event(const SDL_WindowEvent &t_evt);
-  // Raw pointer is only for interfacing with SDL
-  SDL_Window *getRawHandle();
-
-private:
-  Error onInit();
-  Error onDestroy();
-  Error onUpdate();
+  APPLICATION_PARENT(Window)
 
   uint32_t m_y{}, m_x{};
   DEFINE_PROPERTY(uint32_t, m_width, getWidth, setWidth, 0);
@@ -50,4 +25,21 @@ private:
 
   std::shared_ptr<SDL_Window> m_handle;
   DEFINE_REF_PROPERTY(std::string, m_name, getName, setName, {});
+
+public:
+  /// Show the window
+  Error show();
+  /// Close the window
+  Error close();
+  /// Demand focus on the window
+  Error raise();
+  /// Move the window
+  Error move(uint32_t t_x, uint32_t t_y);
+  /// Resize the window
+  Error resize(uint32_t t_width, uint32_t t_height);
+  // Raw pointer is only for interfacing with SDL
+  SDL_Window *getRawHandle();
+
+private:
+  ApplicationError event(Event &t_evt);
 };

@@ -153,6 +153,7 @@ rec {
                 - "*-isolate-declaration"
                 - "*-macro-usage" # old habits die hard
                 - "*-easily-swappable-parameters"
+                - "*-pro-type-union-access"
               CheckOptions:
                 ${naming}.IgnoreNamespaces: std
                 ${naming}.ClassCase: CamelCase

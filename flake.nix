@@ -23,7 +23,6 @@
       url = "path:./nix/pkgs.nix";
       flake = false;
     };
-
     self = {
       submodules = true;
     };

@@ -22,7 +22,7 @@ static constexpr std::array<std::pair<EGPUShaderID, std::span<const unsigned cha
 
 } // namespace shader_definitions
 // NOLINTEND(*-avoid-c-arrays, *-extensions)
-//
+
 static constexpr auto shaders = frozen::make_unordered_map(shader_definitions::index);
 class GPUShader {
   SDL_GPUDevice *m_device{};

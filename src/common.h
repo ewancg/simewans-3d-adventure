@@ -23,6 +23,10 @@
 // IWYU pragma: end_keep
 /// ----- Global project defines -----
 
+// Forward declare for parent of subsystems without cyclic dependency
+class Application;
+class ApplicationError;
+
 #define NS_PER_SEC 1000000000.0
 #define NSPF_60FPS (NS_PER_SEC / 60.)
 #include "macros.h"
@@ -96,3 +100,16 @@ const static auto logPassiveError = []<typename E>(E t_err) {
 };
 
 using namespace std::string_view_literals;
+
+class Event : public std::pair<bool, SDL_Event> {
+public:
+  NO_COPY_MOVE_OR_ASSIGN(Event, "copy the data out of it or mark it as consumed",
+                         "no point in moving event")
+  explicit Event(SDL_Event *&t_evt) {
+    this->first = false;
+    this->second = *t_evt;
+  }
+  ~Event() = default;
+
+  void consume() { this->first = true; }
+};

@@ -66,6 +66,8 @@ function(create_main_executable TARGET)
     else()
       set(OPTIMIZATION_LEVEL "-O0")
     endif()
+    list(APPEND DEFINES APPLICATION_DEBUGGING AUDIO_DEBUGGING
+         GRAPHICS_DEBUGGING WINDOW_DEBUGGING)
   else()
     if("" STREQUAL "${OPTIMIZATION_LEVEL}")
       set(OPTIMIZATION_LEVEL "-O3")

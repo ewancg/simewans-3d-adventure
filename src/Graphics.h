@@ -27,7 +27,8 @@ DEFINE_DERIVED_ERROR_TYPES(Graphics, Subsystem, ERROR_ENTRIES);
 // TODO: create a GPU_Pipeline struct
 
 class Graphics : public Subsystem<GraphicsError> {
-  SUBSYSTEM(Graphics)
+  APPLICATION_PARENT(Graphics)
+
 public:
   /// Begins render pass
   Error beginFrame(Window &t_windowIn);
@@ -37,11 +38,12 @@ public:
   /// Hooks the window up to the graphics driver and creates a swapchain for it
   Error attachWindow(Window &t_windowIn);
   /// Acquires the swapchain texture for direct rendering
-  Error getWindowSwapchainTexture(Window &t_windowIn, SDL_GPUTexture *t_textureOut);
+  Error getWindowSwapchainTexture(Window &t_windowIn, SDL_GPUTexture *&t_textureOut);
 
   // NOTE: this does not do anything like size checks or grouping upload commands
   // or handling data larger then it's buffer in multiple uploads
-  Error uploadData(GPUBuffer &t_buffer, void *t_data, uint32_t t_size, bool t_cycle);
+  template <typename T>
+  Error uploadData(GPUBuffer &t_buffer, T *&t_data, uint32_t t_size, bool t_cycle);
 
 private:
   enum ECommandBufferRole : uint8_t { RENDER = 0, COPY = 1, CB_LENGTH = COPY + 1 };
@@ -50,7 +52,7 @@ private:
   // from ownership semantics at this point
   std::array<SDL_GPUCommandBuffer *, ECommandBufferRole::CB_LENGTH> m_commandBuffers{};
   std::array<SDL_GPUTransferBuffer *, ETransferBufferRole::TB_LENGTH> m_transferBuffers{};
-  std::shared_ptr<SDL_GPUDevice> m_device;
+  SDL_GPUDevice *m_device{};
   SDL_GPUTransferBuffer *m_uploadBuffer{};
   SDL_GPUTransferBuffer *m_downloadBuffer{};
 

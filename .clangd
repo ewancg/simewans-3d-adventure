@@ -15,6 +15,7 @@ Diagnostics:
       - "*-isolate-declaration"
       - "*-macro-usage" # old habits die hard
       - "*-easily-swappable-parameters"
+      - "*-pro-type-union-access"
     CheckOptions:
       readability-identifier-naming.IgnoreNamespaces: std
       readability-identifier-naming.ClassCase: CamelCase

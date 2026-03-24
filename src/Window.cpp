@@ -1,4 +1,5 @@
 #include "Window.h"
+#include "Application.h"
 #include <print>
 using enum EWindowError;
 using Error = WindowError;
@@ -19,9 +20,32 @@ Error Window::onInit() {
     auto [type, msg] = *error;
     std::println(stderr, "Warning from {}: {}", error.context(), msg);
   }
+
+  m_app.subscribeToEvents(this, &Window::event, SDL_EVENT_WINDOW_SHOWN, SDL_EVENT_WINDOW_LAST);
   return {};
 }
 // NOLINTEND
+
+ApplicationError Window::event(Event &t_evt) {
+  auto evt = t_evt.second.window;
+  switch (evt.type) {
+  case SDL_EVENT_WINDOW_FOCUS_LOST:
+    m_focused = false;
+    break;
+  case SDL_EVENT_WINDOW_FOCUS_GAINED:
+    m_focused = true;
+    break;
+  case SDL_EVENT_WINDOW_RESIZED:
+    m_width = evt.data1;
+    m_height = evt.data2;
+    m_resized = true;
+    break;
+  default:
+    break;
+  }
+  t_evt.consume();
+  return {};
+}
 
 Error Window::onDestroy() {
   (void)this;
@@ -74,26 +98,6 @@ Error Window::resize(uint32_t t_width, uint32_t t_height) {
   PASS_ERROR(setHeight(t_height))
   if (!SDL_SetWindowSize(getRawHandle(), static_cast<int>(m_width), static_cast<int>(m_height))) {
     return {RESIZE, SDL_GetError()};
-  }
-  return {};
-}
-
-Error Window::event(const SDL_WindowEvent &t_evt) {
-  switch (t_evt.type) {
-  case SDL_EVENT_WINDOW_FOCUS_LOST:
-    m_focused = false;
-    break;
-  case SDL_EVENT_WINDOW_FOCUS_GAINED:
-    m_focused = true;
-    break;
-  case SDL_EVENT_WINDOW_RESIZED:
-    m_width = t_evt.data1;
-    m_height = t_evt.data2;
-    // glViewport(0, 0, ctx.width, ctx.height);
-    m_resized = true;
-    break;
-  default:
-    break;
   }
   return {};
 }

@@ -11,13 +11,14 @@ using enum EAudioError;
 using Error = AudioError;
 
 Error Audio::onInit() {
-  if (ma_context_init(nullptr, 0, nullptr, &m_context) != MA_SUCCESS) {
+  m_context = ma_context{};
+  if (ma_context_init(nullptr, 0, nullptr, &*m_context) != MA_SUCCESS) {
     return {INIT, "could not initialize audio context"};
   }
 
-  m_playbackDeviceDescriptors.reserve(m_context.playbackDeviceInfoCount);
+  m_playbackDeviceDescriptors.reserve(m_context->playbackDeviceInfoCount);
   if (ma_context_enumerate_devices(
-          &m_context,
+          &*m_context,
           [](ma_context *, ma_device_type t_deviceType, const ma_device_info *t_info,
              void *t_userData) static -> uint32_t {
             if (t_deviceType == ma_device_type_playback) {
@@ -110,9 +111,10 @@ Error Audio::openDevice(const AudioDevice &t_inputDevice) {
           {
               .pDeviceID = &t_inputDevice->id,
           },
+
   };
 
-  if (ma_device_init(&m_context, &deviceConfig, m_device) != MA_SUCCESS) {
+  if (ma_device_init(&*m_context, &deviceConfig, m_device) != MA_SUCCESS) {
     return {DEVICE_INIT, "could not initialize audio device"};
   }
 }
@@ -128,7 +130,7 @@ Error Audio::closeDevice(const AudioDevice &t_inputDevice) { // TODO
 
 Error Audio::onDestroy() {
   PASS_ERROR(closeDeviceInternal(m_device))
-  ma_context_uninit(&m_context);
+  ma_context_uninit(&*m_context);
   return {};
 }
 

@@ -1,4 +1,6 @@
 #include "Application.h"
+#include <SDL3/SDL_init.h>
+#include <print>
 
 // Local includes above, we want tests in all other implementation files to be sourced
 #ifndef UNIT_TESTING
@@ -11,7 +13,7 @@
 // the mainloop and allows us to receive events via. callback instead of polling for them (adding
 // latency waiting for the next frame)
 
-// NOLINTBEGIN(*-owning-memory, *-no-malloc, *-avoid-c-arrays)
+// NOLINTBEGIN(*-owning-memory, *-no-malloc, *-avoid-c-arrays, *-declaration-parameter-name)
 // These are outright required by SDL and/or its callback system; C++ core guidelines with a C
 // library is an uphill battle; to store a single gsl::owner denoting the primary app (what it
 // wants) I would be completely undermining the callback system's benefits
@@ -31,7 +33,7 @@ static SDL_AppResult getApplication(void *t_inState, Application **t_outApp) {
 };
 
 // NOLINTNEXTLINE(*-identifier-naming)
-SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
+SDL_AppResult SDL_AppInit(void **t_appState, int argc, char *argv[]) {
   // TODO: process command line arguments
   (void)argc;
   (void)argv;
@@ -46,52 +48,59 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     std::println(stderr, "Fatal error during app initialization: {}", err.string());
     return SDL_APP_FAILURE;
   }
-  *appstate = app;
+  *t_appState = app;
 
   return SDL_APP_CONTINUE;
 }
 
-// NOLINTNEXTLINE(*-identifier-naming)
-SDL_AppResult SDL_AppIterate(void *appstate) {
+SDL_AppResult SDL_AppIterate(void *t_appState) {
   Application *app{};
-  if (auto err = getApplication(appstate, &app); err != SDL_APP_CONTINUE) {
+  if (auto err = getApplication(t_appState, &app); err != SDL_APP_CONTINUE) {
     return err;
   }
+  static bool ticking{};
+  if (auto err = app->isTicking(ticking); err) {
+    std::println(stderr, "Couldn't query app's ticking state ({})", err.string());
+    return SDL_APP_FAILURE;
+  }
+  if (app->isInitialized() && !ticking) {
+    return SDL_APP_SUCCESS;
+  }
   if (auto err = app->update(); err) {
-    std::println(stderr, "Fatal error ({})", err.string());
+    std::println(stderr, "Fatal error during execution ({})", err.string());
     return SDL_APP_FAILURE;
   }
   return SDL_APP_CONTINUE;
 }
 
-// NOLINTNEXTLINE(*-identifier-naming)
-SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
-  // TODO: rig up to inputs (this is not guaranteed to be called on the main thread so we would need
-  // to take care)
-  (void)event;
-
+SDL_AppResult SDL_AppEvent(void *t_appState, SDL_Event *t_evt) {
+  // TODO: rig up to inputs (this is not guaranteed to be called on the main thread so we need to
+  // take care)
   Application *app{};
-  if (auto err = getApplication(appstate, &app); err != SDL_APP_CONTINUE) {
+  if (auto err = getApplication(t_appState, &app); err != SDL_APP_CONTINUE) {
     return err;
+  }
+  auto evt = Event(t_evt);
+  if (auto err = app->onEvent(evt); err) {
+    std::println(stderr, "Fatal error processing events ({})", err.string());
   }
   return SDL_APP_CONTINUE;
 }
 
-// NOLINTNEXTLINE(*-identifier-naming)
-void SDL_AppQuit(void *appstate, SDL_AppResult result) {
-  result = SDL_APP_FAILURE;
+void SDL_AppQuit(void *t_appState, SDL_AppResult t_result) {
+  t_result = SDL_APP_FAILURE;
   Application *app{};
-  if (auto err = getApplication(appstate, &app); err != SDL_APP_CONTINUE) {
-    result = err;
+  if (auto err = getApplication(t_appState, &app); err != SDL_APP_CONTINUE) {
+    t_result = err;
     return;
   }
   if (auto err = app->destroy(); !err) {
     std::println(stderr, "Fatal error during shutdown {}", err.string());
-    result = SDL_APP_SUCCESS;
+    t_result = SDL_APP_SUCCESS;
   }
   app->~Application();
-  std::free(appstate);
+  std::free(t_appState);
 }
 
-// NOLINTEND(*-owning-memory, *-no-malloc, *-avoid-c-arrays)
+// NOLINTEND(*-owning-memory, *-no-malloc, *-avoid-c-arrays, *-declaration-parameter-name)
 #endif

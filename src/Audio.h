@@ -16,7 +16,8 @@ DEFINE_DERIVED_ERROR_TYPES(Audio, Subsystem, ERROR_ENTRIES);
 
 /// This class handles playback only as that's all the game cares about for now
 class Audio : public Subsystem<AudioError> {
-  SUBSYSTEM(Audio)
+  APPLICATION_PARENT(Audio)
+
 public:
   using AudioDevice = std::vector<ma_device_info>::iterator;
 
@@ -31,7 +32,7 @@ public:
   void queueRestart();
 
 private:
-  ma_context m_context;
+  std::optional<ma_context> m_context;
   ma_device *m_device{};
   std::vector<ma_device_info> m_playbackDeviceDescriptors;
 
