@@ -1,5 +1,6 @@
 #include "Application.h"
 #include <SDL3/SDL_init.h>
+#include <cstdlib>
 #include <print>
 
 // Local includes above, we want tests in all other implementation files to be sourced
@@ -32,6 +33,12 @@ static SDL_AppResult getApplication(void *t_inState, Application **t_outApp) {
   return SDL_APP_CONTINUE;
 };
 
+static void destroyApplication(ApplicationError t_err, SDL_AppResult &t_out) {
+  std::println(stderr, "Fatal error during execution ({})", t_err.string());
+  t_out = SDL_APP_FAILURE;
+  std::quick_exit(1);
+}
+
 // NOLINTNEXTLINE(*-identifier-naming)
 SDL_AppResult SDL_AppInit(void **t_appState, int argc, char *argv[]) {
   // TODO: process command line arguments
@@ -46,6 +53,7 @@ SDL_AppResult SDL_AppInit(void **t_appState, int argc, char *argv[]) {
   auto *app = new (stateBuf) Application{};
   if (auto err = app->init(); err) {
     std::println(stderr, "Fatal error during app initialization: {}", err.string());
+    std::quick_exit(1);
     return SDL_APP_FAILURE;
   }
   *t_appState = app;
@@ -54,27 +62,24 @@ SDL_AppResult SDL_AppInit(void **t_appState, int argc, char *argv[]) {
 }
 
 SDL_AppResult SDL_AppIterate(void *t_appState) {
+  static SDL_AppResult result{};
+  static const auto    fatal = [](auto t_e) { destroyApplication(t_e, result); };
+
   Application *app{};
-  if (auto err = getApplication(t_appState, &app); err != SDL_APP_CONTINUE) {
-    return err;
+  if (result = getApplication(t_appState, &app); result != SDL_APP_CONTINUE) {
+    return result;
   }
+
   static bool ticking{};
-  if (auto err = app->isTicking(ticking); err) {
-    std::println(stderr, "Couldn't query app's ticking state ({})", err.string());
-    return SDL_APP_FAILURE;
-  }
+  app->isTicking(ticking).mapError(fatal);
   if (app->isInitialized() && !ticking) {
-    if (auto err = app->destroy(); err) {
-      std::println(stderr, "Error during shutdown ({})", err.string());
-      return SDL_APP_FAILURE;
-    }
-    return SDL_APP_SUCCESS;
+    result = SDL_APP_SUCCESS;
+    app->destroy().mapError(fatal);
+    return result;
   }
-  if (auto err = app->update(); err) {
-    std::println(stderr, "Fatal error during execution ({})", err.string());
-    return SDL_APP_FAILURE;
-  }
-  return SDL_APP_CONTINUE;
+  result = SDL_APP_CONTINUE;
+  app->update().mapError(fatal);
+  return result;
 }
 
 SDL_AppResult SDL_AppEvent(void *t_appState, SDL_Event *t_evt) {

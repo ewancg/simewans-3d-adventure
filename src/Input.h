@@ -76,17 +76,16 @@ enum EInputMapping : uint8_t {
 
 class Input : public Subsystem<InputError> {
   SUBSYSTEM(Input)
-  Application &m_app;
+  APPLICATION_PARENT(Input)
   Window &m_window;
 
 public:
-  NO_COPY_MOVE_OR_ASSIGN(Input, "", "")
   explicit Input(Application &t_app, Window &t_window) : m_app(t_app), m_window(t_window) {}
   ~Input() = default;
   /// Checks if the input is currently down
-  bool mappingIsPressed(EInputMapping t_in);
+  bool  mappingIsPressed(EInputMapping t_in);
   /// Checks if the input is currently down, and was not last frame
-  bool mappingNewlyPressed(EInputMapping t_in);
+  bool  mappingNewlyPressed(EInputMapping t_in);
   /// Sets the mouse cursor to an absolute position
   Error setMousePos(uint32_t t_x, uint32_t t_y);
   /// Centers the cursor within the screen
@@ -100,7 +99,7 @@ private:
   std::bitset<EInputMapping::LENGTH> m_inputState{0};
   std::bitset<EInputMapping::LENGTH> m_lastInputState{0};
 
-  static bool getKeyState(const SDL_KeyboardEvent &t_evt);
+  static bool      getKeyState(const SDL_KeyboardEvent &t_evt);
   ApplicationError keyboardEvent(Event &t_evt);
   ApplicationError mouseButtonEvent(Event &t_evt);
   ApplicationError mouseMotionEvent(Event &t_evt);
@@ -112,15 +111,7 @@ private:
     (STATE)[PREFIX##_##NAME] = (RHS);                      \
     break;
 
-#define KB_INPUT_KEY_CASES(FN) \
-  FN(A) FN(B) FN(C) FN(D) FN(E) FN(F) FN(G) FN(H) FN(I) FN(J) FN(K) FN(L) FN(M) \
-  FN(N) FN(O) FN(P) FN(Q) FN(R) FN(S) FN(T) FN(U) FN(V) FN(W) FN(X) FN(Y) FN(Z) \
-  FN(0) FN(1) FN(2) FN(3) FN(4) FN(5) FN(6) FN(7) FN(8) FN(9)                \
-  FN(RETURN) FN(SPACE) FN(ESCAPE) FN(LEFT) FN(RIGHT) FN(UP) FN(DOWN)
-
-#define KB_INPUT_MODIFIER_CASES(FN) \
-  FN(LSHIFT) FN(LCTRL) FN(LALT) FN(RSHIFT) FN(RCTRL) FN(RALT)
-
-#define MOUSE_INPUT_BUTTON_CASES(FN) \
-  FN(LEFT) FN(MIDDLE) FN(RIGHT) FN(X1) FN(X2)
+#define KB_INPUT_KEY_CASES(FN) FN(A) FN(B) FN(C) FN(D) FN(E) FN(F) FN(G) FN(H) FN(I) FN(J) FN(K) FN(L) FN(M) FN(N) FN(O) FN(P) FN(Q) FN(R) FN(S) FN(T) FN(U) FN(V) FN(W) FN(X) FN(Y) FN(Z) FN(0) FN(1) FN(2) FN(3) FN(4) FN(5) FN(6) FN(7) FN(8) FN(9) FN(RETURN) FN(SPACE) FN(ESCAPE) FN(LEFT) FN(RIGHT) FN(UP) FN(DOWN)
+#define KB_INPUT_MODIFIER_CASES(FN) FN(LSHIFT) FN(LCTRL) FN(LALT) FN(RSHIFT) FN(RCTRL) FN(RALT)
+#define MOUSE_INPUT_BUTTON_CASES(FN) FN(LEFT) FN(MIDDLE) FN(RIGHT) FN(X1) FN(X2)
 // clang-format on

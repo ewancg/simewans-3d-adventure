@@ -21,7 +21,8 @@ DEFINE_DERIVED_ERROR_TYPES(Audio, Subsystem, ERROR_ENTRIES);
 /// This class handles playback only as that's all the game cares about for now
 class Audio : public Subsystem<AudioError> {
   SUBSYSTEM(Audio)
-  APPLICATION_PARENT(Audio, {})
+  APPLICATION_PARENT(Audio)
+  APPLICATION_PARENT_CTOR(Audio)
 
 public:
   using AudioDevice = std::vector<ma_device_info>::iterator;
@@ -34,14 +35,14 @@ public:
   Error closeDevice(const AudioDevice &t_inputDevice);
 
   Error getCurrentDeviceName(std::string_view &t_output);
-  void queueRestart();
+  void  queueRestart();
 
 private:
   struct CallbackShared {
     std::atomic_bool error = false;
   } m_dataCallbackState;
-  std::optional<ma_context> m_context;
-  ma_device *m_device{};
+  std::optional<ma_context>   m_context;
+  ma_device                  *m_device{};
   std::vector<ma_device_info> m_playbackDeviceDescriptors;
 
   bool m_restartPending{true};

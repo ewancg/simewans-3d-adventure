@@ -1,6 +1,10 @@
 #include "Application.h"
 #include "Application/Config.h"
+#include <any>
+#include <print>
 
+using enum Config::EConfigType;
+using enum Config::ESystemConfigs;
 using enum EApplicationError;
 using Error = ApplicationError;
 
@@ -12,8 +16,6 @@ using Error = ApplicationError;
   }
 
 Error Application::onInit() {
-  m_config = std::make_unique(new Config(*this));
-
   SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_NAME_STRING, metadata.name);
   SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_VERSION_STRING, metadata.version);
   SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_IDENTIFIER_STRING, metadata.identifier);
@@ -21,6 +23,9 @@ Error Application::onInit() {
   SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_COPYRIGHT_STRING, metadata.copyright);
   SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_URL_STRING, metadata.url);
   SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_TYPE_STRING, metadata.type);
+
+  /// Load the config because it's guaranteed for subsystems at init
+  PROPAGATE_ERROR(INIT, config.init());
 
   /// Order is very important: input is initialized with a reference to window
   PROPAGATE_ERROR(INIT, audio.init());
@@ -33,12 +38,20 @@ Error Application::onInit() {
   window.show().mapError(logPassiveError);
 
   m_isTicking = true;
-
   return {};
 }
 
 Error Application::onDestroy() {
-  /// Order is very important: reverse of initialization order
+  if (m_isTicking) {
+    logPassiveError(Error{DESTROY, "destroy called while app is supposedly still ticking"});
+  }
+
+  window.close().mapError(logPassiveError);
+
+  /// Save the config before it potentially crashes on shutdown & causes a quick_exit
+  PROPAGATE_ERROR(DESTROY, config.destroy());
+
+  /// Subsystem destruction order is important: reverse of initialization order
   PROPAGATE_ERROR(DESTROY, input.destroy());
   PROPAGATE_ERROR(DESTROY, window.destroy());
   PROPAGATE_ERROR(DESTROY, graphics.destroy());
@@ -79,12 +92,22 @@ Error Application::onEvent(Event &t_evt) {
   // Since above runs in parallel, consumption of the event won't affect whether it's called for
   // remaining subsystems (all subscribers still act on it regardless of which gets the first
   // chance)
+
+  auto mainConfig     = std::any_cast<MainConfigData>(config.get(MAIN));
+  auto graphicsConfig = std::any_cast<GraphicsConfigData>(config.get(GRAPHICS));
+
   if (!t_evt.first) {
     switch (t_evt.second.type) {
     case SDL_EVENT_QUIT:
       PASS_ERROR(setTicking(false))
       break;
 
+    case SDL_EVENT_KEY_DOWN:
+      std::println("{}, {}, {}, {}", mainConfig.null_brush_color.r, mainConfig.null_brush_color.g,
+                   mainConfig.null_brush_color.b, mainConfig.null_brush_color.a);
+      std::println("{}, {}, {}", graphicsConfig.dpi_override, graphicsConfig.fps_cap,
+                   graphicsConfig.vsync);
+      break;
     case SDL_EVENT_SYSTEM_THEME_CHANGED:
       std::println("wdym SDL_EVENT_SYSTEM_THEME_CHANGED");
       break;

@@ -2,7 +2,7 @@
 
 // Error construction macros
 
-#define _ERROR_ENUM_NAME(NAME) E##NAME##Error
+#define _ERROR_ENUM_NAME(NAME)           E##NAME##Error
 #define _ERROR_ENUM_ENTRY(CONSTANT, MSG) CONSTANT,
 #define _DEFINE_ERROR_ENUM_TYPE(NAME, START_INDEX, ENTRIES)                                        \
   enum class _ERROR_ENUM_NAME(NAME) : uint8_t {                                                    \
@@ -68,8 +68,8 @@
       if (!self) {                                                                                 \
         return "";                                                                                 \
       }                                                                                            \
-      const auto value = std::to_underlying(std::get<0>(*self));                                   \
-      const auto &msg = std::get<1>(*self);                                                        \
+      const auto  value = std::to_underlying(std::get<0>(*self));                                  \
+      const auto &msg   = std::get<1>(*self);                                                      \
       switch (static_cast<Enum>(value)) {                                                          \
         ENTRIES(_ERROR_CONTEXT_CASE)                                                               \
       case Enum::UNKNOWN:                                                                          \
@@ -90,8 +90,8 @@
       if (!self) {                                                                                 \
         return "";                                                                                 \
       }                                                                                            \
-      const auto value = std::to_underlying(std::get<0>(*self));                                   \
-      const auto &msg = std::get<1>(*self);                                                        \
+      const auto  value = std::to_underlying(std::get<0>(*self));                                  \
+      const auto &msg   = std::get<1>(*self);                                                      \
       if (value < uint8_t(START_INDEX)) {                                                          \
         BASE_ERROR_TYPE base_err{static_cast<BASE_ENUM_TYPE>(value), msg};                         \
         return base_err.context();                                                                 \
@@ -164,13 +164,13 @@ private:                                                                        
   Error onDestroy();                                                                               \
   Error onUpdate();
 
-#define NO_COPY(TYPE, REASON) TYPE(const TYPE &t_in) = delete; // (REASON)
+#define NO_COPY(TYPE, REASON)        TYPE(const TYPE &t_in) = delete; // (REASON)
 #define NO_COPY_ASSIGN(TYPE, REASON) TYPE &operator=(const TYPE &t_in) = delete;
 #define NO_COPY_OR_ASSIGN(TYPE, REASON)                                                            \
   NO_COPY(TYPE, REASON)                                                                            \
   NO_COPY_ASSIGN(TYPE, REASON)
 
-#define NO_MOVE(TYPE, REASON) TYPE(TYPE &&m_in) = delete;
+#define NO_MOVE(TYPE, REASON)        TYPE(TYPE &&m_in) = delete;
 #define NO_MOVE_ASSIGN(TYPE, REASON) TYPE &operator=(TYPE &&m_in) = delete;
 #define NO_MOVE_OR_ASSIGN(TYPE, REASON)                                                            \
   NO_MOVE(TYPE, REASON)                                                                            \
@@ -180,12 +180,18 @@ private:                                                                        
   NO_COPY_OR_ASSIGN(TYPE, NOCOPY_REASON)                                                           \
   NO_MOVE_OR_ASSIGN(TYPE, NOMOVE_REASON)
 
-#define APPLICATION_PARENT(NAME, CTOR)                                                             \
+#define APPLICATION_PARENT(NAME)                                                                   \
 public:                                                                                            \
+  Application & m_app;                                                                             \
   NO_COPY_MOVE_OR_ASSIGN(NAME, "Application subsystems can't be copied",                           \
                          "Application subsystems can't be moved")                                  \
-  Application & m_app;                                                                             \
-  explicit NAME(Application &t_app) : m_app(t_app) CTOR ~NAME() = default;                         \
+                                                                                                   \
+private:
+
+#define APPLICATION_PARENT_CTOR(NAME)                                                              \
+public:                                                                                            \
+  explicit NAME(Application &t_app) : m_app(t_app) {}                                              \
+  ~NAME() = default;                                                                               \
                                                                                                    \
 private:
 

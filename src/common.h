@@ -24,6 +24,8 @@
 /// ----- Global project defines -----
 
 // Forward declare for parent of subsystems without cyclic dependency
+class Application;
+class ApplicationError;
 class Config;
 
 #define NS_PER_SEC 1000000000.0
@@ -86,8 +88,8 @@ public:
     if (!t_self) {
       return "";
     }
-    auto [type, str] = *t_self;
-    auto typeStr = t_self.context();
+    auto [type, str]                        = *t_self;
+    auto                            typeStr = t_self.context();
     static thread_local std::string buffer{};
     buffer = std::format("{}: {}", typeStr, str);
     return buffer;
@@ -105,7 +107,7 @@ public:
   NO_COPY_MOVE_OR_ASSIGN(Event, "copy the data out of it or mark it as consumed",
                          "no point in moving event")
   explicit Event(SDL_Event *&t_evt) {
-    this->first = false;
+    this->first  = false;
     this->second = *t_evt;
   }
   ~Event() = default;

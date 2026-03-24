@@ -36,8 +36,8 @@ ApplicationError Window::event(Event &t_evt) {
     m_focused = true;
     break;
   case SDL_EVENT_WINDOW_RESIZED:
-    m_width = evt.data1;
-    m_height = evt.data2;
+    m_width   = evt.data1;
+    m_height  = evt.data2;
     m_resized = true;
     break;
   default:

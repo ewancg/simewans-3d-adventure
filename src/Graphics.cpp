@@ -1,4 +1,6 @@
 #include "Graphics.h"
+#include "Application.h"
+#include "Application/Config.h"
 #include <SDL3/SDL_gpu.h>
 
 using enum EGraphicsError;
@@ -21,7 +23,7 @@ Error Graphics::onInit() {
   /* CREATE SDL GPU TRANSFER BUFFERS */
   SDL_GPUTransferBufferCreateInfo uploadBufCreateInfo = {.usage =
                                                              SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD,
-                                                         .size = DEFAULT_TRANSFER_BUFFER_SIZE,
+                                                         .size  = DEFAULT_TRANSFER_BUFFER_SIZE,
                                                          .props = 0};
   m_uploadBuffer = SDL_CreateGPUTransferBuffer(device, &uploadBufCreateInfo);
   if (m_uploadBuffer == nullptr) {
@@ -30,7 +32,7 @@ Error Graphics::onInit() {
 
   SDL_GPUTransferBufferCreateInfo downloadBufCreateInfo = {.usage =
                                                                SDL_GPU_TRANSFERBUFFERUSAGE_DOWNLOAD,
-                                                           .size = DEFAULT_TRANSFER_BUFFER_SIZE,
+                                                           .size  = DEFAULT_TRANSFER_BUFFER_SIZE,
                                                            .props = 0};
   m_downloadBuffer = SDL_CreateGPUTransferBuffer(device, &downloadBufCreateInfo);
   if (m_downloadBuffer == nullptr) {
@@ -73,14 +75,16 @@ Error Graphics::beginFrame(Window &t_windowIn) {
 
   getWindowSwapchainTexture(t_windowIn, m_windowTexture).mapError(logPassiveError);
 
+  auto mainConfig = std::any_cast<MainConfigData>(m_app.config.get(Config::ESystemConfigs::MAIN));
+
   // Setup and start a render pass
-  SDL_GPUColorTargetInfo targetInfo{.texture = m_windowTexture,
-                                    .mip_level = 0,
+  SDL_GPUColorTargetInfo targetInfo{.texture              = m_windowTexture,
+                                    .mip_level            = 0,
                                     .layer_or_depth_plane = 0,
-                                    .clear_color = NULL_BRUSH_COLOR,
-                                    .load_op = SDL_GPU_LOADOP_CLEAR,
-                                    .store_op = SDL_GPU_STOREOP_STORE,
-                                    .cycle = false};
+                                    .clear_color          = mainConfig.null_brush_color,
+                                    .load_op              = SDL_GPU_LOADOP_CLEAR,
+                                    .store_op             = SDL_GPU_STOREOP_STORE,
+                                    .cycle                = false};
   m_renderPass = SDL_BeginGPURenderPass(commandBuf, &targetInfo, 1, nullptr);
   return {};
 }
@@ -94,14 +98,14 @@ Error Graphics::endFrame(double &t_frameTimeOut) {
     item = {};
   }
 
-  uint64_t now = SDL_GetTicksNS();
+  uint64_t now       = SDL_GetTicksNS();
   uint64_t frameTime = now - m_lastFrameTime;
 
   SDL_DelayPrecise(static_cast<uint64_t>(m_frameIntervalNS) - frameTime);
 
   m_lastFrameTime = now;
-  t_frameTimeOut = m_frameIntervalNS / NS_PER_SEC;
-  m_renderPass = nullptr;
+  t_frameTimeOut  = m_frameIntervalNS / NS_PER_SEC;
+  m_renderPass    = nullptr;
   return {};
 }
 
@@ -142,8 +146,8 @@ Error Graphics::uploadData(GPUBuffer &t_buf, T *&t_data, uint32_t t_size, bool t
   SDL_UnmapGPUTransferBuffer(m_device, m_uploadBuffer);
 
   SDL_GPUTransferBufferLocation source = {.transfer_buffer = m_uploadBuffer, .offset = 0};
-  SDL_GPUBufferRegion destination = {.buffer = t_buf.m_buffer, .offset = 0, .size = t_size};
-  SDL_GPUCopyPass *copyPass = SDL_BeginGPUCopyPass(m_commandBuffers[ECommandBufferRole::COPY]);
+  SDL_GPUBufferRegion destination      = {.buffer = t_buf.m_buffer, .offset = 0, .size = t_size};
+  SDL_GPUCopyPass    *copyPass = SDL_BeginGPUCopyPass(m_commandBuffers[ECommandBufferRole::COPY]);
   SDL_UploadToGPUBuffer(copyPass, &source, &destination, t_cycle);
   SDL_EndGPUCopyPass(copyPass);
 

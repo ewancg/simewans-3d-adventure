@@ -1,10 +1,10 @@
 #pragma once
-#include "Application.h"
 #include "Graphics/GPUBuffer.h"
 #include "Graphics/GPUShader.h"
 #include "Graphics/GPUTexture.h"
 #include "Subsystem.h"
 #include "Window.h"
+
 #ifndef GRAPHICS_DEBUGGING
 #define GRAPHICS_DEBUGGING false
 #endif
@@ -26,7 +26,8 @@ DEFINE_DERIVED_ERROR_TYPES(Graphics, Subsystem, ERROR_ENTRIES);
 
 class Graphics : public Subsystem<GraphicsError> {
   SUBSYSTEM(Graphics)
-  APPLICATION_PARENT(Graphics, {})
+  APPLICATION_PARENT(Graphics)
+  APPLICATION_PARENT_CTOR(Graphics)
 
 public:
   /// Begins render pass
@@ -49,15 +50,15 @@ private:
   enum ETransferBufferRole : uint8_t { UPLOAD = 0, DOWNLOAD = 1, TB_LENGTH = DOWNLOAD + 1 };
   // This is only a raw pointer because we explicitly do not free it per docs and we do not benefit
   // from ownership semantics at this point
-  std::array<SDL_GPUCommandBuffer *, ECommandBufferRole::CB_LENGTH> m_commandBuffers{};
+  std::array<SDL_GPUCommandBuffer *, ECommandBufferRole::CB_LENGTH>   m_commandBuffers{};
   std::array<SDL_GPUTransferBuffer *, ETransferBufferRole::TB_LENGTH> m_transferBuffers{};
-  SDL_GPUDevice *m_device{};
-  SDL_GPUTransferBuffer *m_uploadBuffer{};
-  SDL_GPUTransferBuffer *m_downloadBuffer{};
+  SDL_GPUDevice                                                      *m_device{};
+  SDL_GPUTransferBuffer                                              *m_uploadBuffer{};
+  SDL_GPUTransferBuffer                                              *m_downloadBuffer{};
 
   SDL_GPUTexture *m_windowTexture{};
 
-  uint64_t m_lastFrameTime{};
+  uint64_t           m_lastFrameTime{};
   // Transient handle that only lives between beginFrame and endFrame; nullptr all other times
   SDL_GPURenderPass *m_renderPass{};
   DEFINE_PROPERTY(double, m_frameIntervalNS, getFrameInterval, setFrameInterval, {});

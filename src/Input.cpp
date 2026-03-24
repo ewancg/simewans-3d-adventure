@@ -1,5 +1,6 @@
 #include "Input.h"
 #include "Application.h"
+
 using enum EInputError;
 using Error = InputError;
 
@@ -62,10 +63,10 @@ ApplicationError Input::mouseMotionEvent(Event &t_evt) {
   if (mode == nullptr) {
     return {EVENT, SDL_GetError()};
   }
-  auto &evt = t_evt.second;
-  auto &motion = evt.motion;
-  m_mouseData.x = motion.x / static_cast<float>(mode->w);
-  m_mouseData.y = motion.y / static_cast<float>(mode->h);
+  auto &evt      = t_evt.second;
+  auto &motion   = evt.motion;
+  m_mouseData.x  = motion.x / static_cast<float>(mode->w);
+  m_mouseData.y  = motion.y / static_cast<float>(mode->h);
   m_mouseData.xm = motion.xrel / static_cast<float>(mode->w);
   m_mouseData.ym = motion.yrel / static_cast<float>(mode->h);
 

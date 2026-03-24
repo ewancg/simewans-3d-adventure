@@ -90,11 +90,25 @@ function(create_main_executable TARGET)
 
   # --- Create executable
   unset(ROOT_SOURCES)
-  foreach(SRC #
-          main.cpp Application.cpp Audio.cpp Graphics.cpp Input.cpp Window.cpp)
+  foreach(
+    SRC #
+    main.cpp
+    Application/Config.cpp
+    Application.cpp
+    Audio.cpp
+    Graphics.cpp
+    Input.cpp
+    Window.cpp)
     list(APPEND ROOT_SOURCES "${CMAKE_SOURCE_DIR}/src/${SRC}")
   endforeach()
   add_executable("${TARGET}" ${ARG_SOURCES} ${ROOT_SOURCES})
+
+  # formalize <> include syntax, hopefully allow clangd to ignore errors from
+  # these libraries with generated compile_commands.json
+  set_property(TARGET SDL3::Headers PROPERTY SYSTEM TRUE)
+  set_property(TARGET frozen::frozen PROPERTY SYSTEM TRUE)
+  set_property(TARGET glaze::glaze PROPERTY SYSTEM TRUE)
+  set_property(TARGET PkgConfig::miniaudio PROPERTY SYSTEM TRUE)
 
   # --- Populate include directories
   target_include_directories("${TARGET}" PRIVATE "${CMAKE_SOURCE_DIR}/include")

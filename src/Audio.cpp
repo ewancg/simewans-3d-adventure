@@ -28,7 +28,7 @@ Error Audio::onInit() {
              void *t_userData) static -> uint32_t {
             if (t_deviceType == ma_device_type_playback) {
               auto *self = static_cast<Audio *>(t_userData);
-              auto item = self->m_playbackDeviceDescriptors.insert(
+              auto  item = self->m_playbackDeviceDescriptors.insert(
                   self->m_playbackDeviceDescriptors.end(), *t_info);
               if (t_info->isDefault) {
                 // this lets us assume default has an index of 0 so we don't have to store an
@@ -111,13 +111,13 @@ Error Audio::openDevice(const AudioDevice &t_inputDevice) {
       // This block is equivalent to ma_device_config_init
       .deviceType = ma_device_type_playback,
       .sampleRate = {},
-      .periods = {},
-      .noClip = {},
+      .periods    = {},
+      .noClip     = {},
       .dataCallback =
           [](ma_device *t_device, void *t_output, const void *, ma_uint32 t_frameCount) {
-            auto *audioContext = static_cast<Audio *>(t_device->pUserData);
+            auto             *audioContext = static_cast<Audio *>(t_device->pUserData);
             const static auto bail = [&]() { audioContext->m_dataCallbackState.error = true; };
-            auto deviceInfo = ma_device_info{};
+            auto              deviceInfo = ma_device_info{};
             if (ma_device_get_info(t_device, ma_device_type_playback, &deviceInfo) != MA_SUCCESS) {
               bail();
               return;
@@ -183,14 +183,14 @@ Error Audio::openDevice(const AudioDevice &t_inputDevice) {
               break;
             }
           },
-      .pUserData = this,
+      .pUserData  = this,
       .resampling = ma_resampler_config_init(
           ma_format_unknown, 0, 0, 0,
           ma_resample_algorithm_linear), // Format/channels/rate don't matter here. Lanczos?
       .playback =
           {
               .pDeviceID = &t_inputDevice->id,
-              .format = ma_format_unknown,
+              .format    = ma_format_unknown,
           },
 
   };
@@ -213,7 +213,7 @@ Error Audio::closeDevice(const AudioDevice &t_inputDevice) { // TODO
 }
 
 Error Audio::onDestroy() {
-  PASS_ERROR(closeDeviceInternal(m_device))
+  // PASS_ERROR(closeDeviceInternal(m_device))
   return {};
 }
 
