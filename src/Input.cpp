@@ -21,10 +21,11 @@ Error Input::onDestroy() {
   return {};
 }
 
+bool Input::getKeyState(const SDL_KeyboardEvent &t_evt) { return t_evt.down || !t_evt.repeat; };
 ApplicationError Input::keyboardEvent(Event &t_evt) {
   auto evt = t_evt.second.key;
-#define KEYS(NAME) INPUT_CASE(KEY, SDL_SCANCODE, m_inputState, getKeyState(evt), NAME)
-#define MODS(NAME) INPUT_CASE(MOD, SDL_SCANCODE, m_inputState, getKeyState(evt), NAME)
+#define KEYS(NAME) INPUT_CASE(KEY, SDL_SCANCODE, m_nextInputState, getKeyState(evt), NAME)
+#define MODS(NAME) INPUT_CASE(MOD, SDL_SCANCODE, m_nextInputState, getKeyState(evt), NAME)
   switch (evt.scancode) {
     KB_INPUT_KEY_CASES(KEYS)
     KB_INPUT_MODIFIER_CASES(MODS)
@@ -37,15 +38,15 @@ ApplicationError Input::keyboardEvent(Event &t_evt) {
 
 ApplicationError Input::mouseButtonEvent(Event &t_evt) {
   auto evt = t_evt.second;
-#define MOUSE_BUTTONS(NAME) INPUT_CASE(MOUSE, SDL_BUTTON, m_inputState, evt.button.down, NAME)
+#define MOUSE_BUTTONS(NAME) INPUT_CASE(MOUSE, SDL_BUTTON, m_nextInputState, evt.button.down, NAME)
   switch (evt.button.type) {
     MOUSE_INPUT_BUTTON_CASES(MOUSE_BUTTONS)
   case SDL_EVENT_MOUSE_WHEEL:
     if (evt.wheel.y < 0) {
-      m_inputState[MOUSE_WHEEL_DOWN] = true;
+      m_nextInputState[MOUSE_WHEEL_DOWN] = true;
     }
     if (evt.wheel.y > 0) {
-      m_inputState[MOUSE_WHEEL_UP] = true;
+      m_nextInputState[MOUSE_WHEEL_UP] = true;
     }
   default:
     return {};
@@ -75,13 +76,12 @@ ApplicationError Input::mouseMotionEvent(Event &t_evt) {
 }
 
 Error Input::onUpdate() {
+  m_inputState     = m_nextInputState;
   m_lastInputState = m_inputState;
   return {};
 }
 
 // ----------
-
-bool Input::getKeyState(const SDL_KeyboardEvent &t_evt) { return t_evt.down || !t_evt.repeat; };
 
 constexpr const char *mousePosErrMsg =
     "attempted to set the mouse position on an Input without a valid window";

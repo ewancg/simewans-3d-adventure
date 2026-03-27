@@ -96,6 +96,7 @@ private:
     float x, y;
     float xm, ym;
   } m_mouseData{};
+  std::bitset<EInputMapping::LENGTH> m_nextInputState{0};
   std::bitset<EInputMapping::LENGTH> m_inputState{0};
   std::bitset<EInputMapping::LENGTH> m_lastInputState{0};
 
