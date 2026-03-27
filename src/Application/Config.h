@@ -1,7 +1,6 @@
 #pragma once
 #include "ConfigDefinitions.h"
 #include "Error.h"
-#include <any>
 #include <filesystem>
 #include <glaze/core/context.hpp>
 #include <glaze/toml.hpp>
@@ -103,4 +102,3 @@ private:
   [[nodiscard]] std::string getCanonicalConfigBase() const;
   [[nodiscard]] std::string getPath(EConfigType t_type, std::string t_inPath = "") const;
 };
-Config *Config::configPtr = nullptr;

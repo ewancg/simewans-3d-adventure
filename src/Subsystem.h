@@ -1,5 +1,6 @@
 #pragma once
 
+#include <any>
 #include <functional>
 #include <type_traits>
 template <typename T> constexpr std::string_view noContext(T &) { return ""; }
@@ -21,12 +22,16 @@ template <IsSubsystemError Error> class Subsystem;
 template <typename T, typename Error>
 concept IsSubsystem = bool(std::is_base_of<Subsystem<Error>, T>());
 
+template <typename T>
+concept SubsystemDeleteable = bool(std::is_move_assignable<T>());
+
 template <IsSubsystemError Error = SubsystemError> class Subsystem {
 private:
   using enum ESubsystemError;
   bool m_isInitialized{};
 
   std::vector<std::reference_wrapper<const std::function<Error()>>> m_pendingDeletionCallbacks;
+  std::vector<std::any>                                             m_objectsPendingDeletion;
 
 protected:
   /// For the child class to implement
@@ -67,6 +72,7 @@ public:
         return {DELETE_AFTER_FRAME, err.string()};
       }
     }
+    t_self.m_objectsPendingDeletion.clear();
   }
 
   /// Protects against double deletes across varied contexts + allows us to assume every stateful
@@ -81,8 +87,11 @@ public:
         "A Subsystem cannot manage the lifetime of an item without a virtual destructor.");
     m_pendingDeletionCallbacks.push_back(std::reference_wrapper(t_deleterFn));
   }
-  template <typename T> void deleteAfterFrame(std::unique_ptr<T> t_object) {
-    deleteAfterFrame(t_object.release());
+  template <SubsystemDeleteable T> void deleteAfterFrame(T t_object) {
+    m_objectsPendingDeletion.push_back(t_object);
+  }
+  template <typename Inner> void deleteAfterFrame(std::shared_ptr<Inner> t_object) {
+    m_objectsPendingDeletion.push_back(t_object);
   }
 
   template <IsSubsystemError ForeignError, IsSubsystem<ForeignError> T>

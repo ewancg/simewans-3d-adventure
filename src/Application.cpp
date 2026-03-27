@@ -1,6 +1,5 @@
 #include "Application.h"
 #include "Application/Config.h"
-#include <any>
 #include <print>
 
 using enum Config::EConfigType;
@@ -12,7 +11,7 @@ using Error = ApplicationError;
 // NOLINTNEXTLINE(*-macro-usage)
 #define PROPAGATE_ERROR(CONTEXT, OPERATION)                                                        \
   if (auto err = OPERATION; err != std::nullopt) {                                                 \
-    return {CONTEXT, err.context()};                                                               \
+    return {CONTEXT, err.string()};                                                                \
   }
 
 Error Application::onInit() {

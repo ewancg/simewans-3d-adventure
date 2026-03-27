@@ -6,7 +6,9 @@
 #include <SDL3/SDL.h>
 
 /// ----- STL includes -----
+#include <any>
 #include <format>
+#include <memory>
 #include <optional>
 #include <print>
 #include <string>
@@ -90,12 +92,19 @@ public:
     }
     auto [type, str]                        = *t_self;
     auto                            typeStr = t_self.context();
+    // NOLINTNEXTLINE(*-avoid-c-arrays)
     static thread_local std::string buffer{};
-    buffer = std::format("{}: {}", typeStr, str);
-    return buffer;
+    buffer = std::format("{}: {}", typeStr, t_self.context());
+    return {std::string_view(buffer)};
   }
 };
 
+template <typename T>
+static std::shared_ptr<std::string> errorStr(T &t_subsystem, std::string t_str) {
+  auto ptr = std::make_shared<std::string>(t_str);
+  t_subsystem.template deleteAfterFrame<std::string>(ptr);
+  return ptr;
+};
 const static auto logPassiveError = []<typename E>(E t_err) {
   std::println(stderr, "Error encountered {}", t_err.string());
 };

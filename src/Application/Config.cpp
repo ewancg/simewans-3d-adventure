@@ -1,15 +1,11 @@
 #include "Config.h"
 #include "../Application.h"
 #include "Error.h"
-#include <SDL3/SDL_filesystem.h>
-#include <cstdio>
-#include <cstdlib>
-#include <format>
-#include <utility>
 
 using enum Config::EConfigType;
 using enum Config::ESystemConfigs;
 using enum EApplicationError;
+Config *Config::configPtr = nullptr;
 
 Config::Config(Application &t_app) : m_app(t_app), m_main("main"), m_graphics("graphics") {
   if (configPtr != nullptr) {
@@ -22,16 +18,18 @@ Config::Config(Application &t_app) : m_app(t_app), m_main("main"), m_graphics("g
 ApplicationError Config::init() {
   m_gamePath = SDL_GetBasePath();
   auto *str  = SDL_GetPrefPath(Application::metadata.author, Application::metadata.name);
-  if (str == nullptr) {
-    std::string res = SDL_GetError();
-    res             = "couldn't determine config path (" + res + ")";
+  if (const auto *err = SDL_GetError(); str == nullptr || err != nullptr) {
+    auto res = std::string(err);
+    std::format_to(&res, "couldn't determine config path ({})", res);
     return {CONFIG_INIT, res};
   }
   m_configPath.assign(str);
   auto baseDir = formatConfigPath();
   if (!std::filesystem::exists(baseDir)) {
     if (!SDL_CreateDirectory(baseDir.c_str())) {
-      return {CONFIG_INIT, std::format("couldn't create config directory ({})"sv, SDL_GetError())};
+      auto str =
+          errorStr(m_app, std::format("couldn't create config directory ({})", SDL_GetError()));
+      return {CONFIG_INIT, std::string_view(*str)};
     }
   }
   if (std::at_quick_exit(&Config::emergencySave) != 0) {
