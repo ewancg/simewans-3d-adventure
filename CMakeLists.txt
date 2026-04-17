@@ -92,9 +92,14 @@ function(create_main_executable TARGET)
   unset(ROOT_SOURCES)
   foreach(
     SRC #
+    # Runtime (main.cpp is for SDL3 callbacks)
     main.cpp
-    Application/Config.cpp
-    Application.cpp
+    # Subsystems
+    Application/Config.cpp # Client-side TOML for system & user preferences
+    # Application/StringCache.cpp # Arena-like storage mechanism for unscoped, #
+    # persistent strings
+    Application.cpp # Core facilities (init/destroy/iterate/event callbacks;
+                    # management of all other subsystems)
     Audio.cpp
     Graphics.cpp
     Input.cpp
@@ -129,6 +134,7 @@ function(create_main_executable TARGET)
             pulse
             glaze::glaze
             frozen::frozen
+            fmt::fmt
             SDL3::Headers
             SDL3::SDL3
             PkgConfig::miniaudio)
@@ -155,6 +161,7 @@ include(FetchContent)
 include(Sanitizers)
 find_package(SDL3 REQUIRED CONFIG)
 find_package(frozen REQUIRED CONFIG)
+find_package(fmt REQUIRED CONFIG)
 find_package(glaze REQUIRED CONFIG)
 cmake_pkg_config(IMPORT miniaudio "0.11.24" REQUIRED)
 

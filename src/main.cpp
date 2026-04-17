@@ -1,115 +1,119 @@
-#include "Application.h"
-#include <SDL3/SDL_init.h>
-#include <cstdlib>
-#include <print>
+#include <SDL3/SDL_events.h>
+#include <functional>
 
-// Local includes above, we want tests in all other implementation files to be sourced
 #ifndef UNIT_TESTING
+#ifdef ENABLE_APP_CALLBACKS
+#include "Application/SDLCallbacks.h"
+#else
 
-#define SDL_MAIN_USE_CALLBACKS
-#include <SDL3/SDL_main.h>
+#include "Application.h"
+#include "Application/Config.h"
 
-// The goal with the callbacks is to eliminate a global state for the runtime context of
-// the application so it can defer to the OS's runtime management; allows us to not worry about
-// the mainloop and allows us to receive events via. callback instead of polling for them (adding
-// latency waiting for the next frame)
-
-// NOLINTBEGIN(*-owning-memory, *-no-malloc, *-avoid-c-arrays, *-declaration-parameter-name)
-// These are outright required by SDL and/or its callback system; C++ core guidelines with a C
-// library is an uphill battle; to store a single gsl::owner denoting the primary app (what it
-// wants) I would be completely undermining the callback system's benefits
-static SDL_AppResult getApplication(void *t_inState, Application **t_outApp) {
-  const static auto badState = [] {
-    std::println(stderr, "App state pointer was invalidated since last access.");
-    return SDL_APP_FAILURE;
-  };
-  if (t_inState == nullptr) {
-    return badState();
-  }
-  *t_outApp = static_cast<Application *>(t_inState);
-  if (t_outApp == nullptr) {
-    return badState();
-  }
-  return SDL_APP_CONTINUE;
+struct Configs {
+  MainConfigData     main;
+  GraphicsConfigData graphics;
 };
 
-static void destroyApplication(ApplicationError t_err, SDL_AppResult &t_out) {
-  std::println(stderr, "Fatal error during execution ({})", t_err.string());
-  t_out = SDL_APP_FAILURE;
-  std::quick_exit(1);
+// NOLINTBEGIN(*-avoid-non-const-global-variables)
+namespace {
+std::atomic_bool ticking = true;
+Application      app{}; // NOLINT(cert-err58-cpp)
+Configs         *config;
+} // namespace
+// NOLINTEND(*-avoid-non-const-global-variables)
+
+template <typename Stage> static constexpr auto mkErrorFn(Stage t_stage) {
+  return [t_stage](auto t_err) {
+    ticking = false;
+    std::println(stderr, "Fatal error during {}: {}", t_stage, t_err.string());
+  };
+};
+
+/// Returns success
+static inline bool processEvent(SDL_Event *t_event) {
+  auto evt = Event(t_event);
+  app.onEvent(evt).mapError(mkErrorFn("event processing"));
+  return ticking;
 }
 
-// NOLINTNEXTLINE(*-identifier-naming)
-SDL_AppResult SDL_AppInit(void **t_appState, int argc, char *argv[]) {
-  // TODO: process command line arguments
-  (void)argc;
-  (void)argv;
-
-  // If we were not using SDL callbacks I would keep Application on the stack
-  // If the Application object ever overflows past 1 page's length, this is completely useless
-  auto *stateBuf = std::aligned_alloc(std::max(sizeof(Application), Application::getHostPageSize()),
-                                      sizeof(Application));
-
-  auto *app = new (stateBuf) Application{};
-  if (auto err = app->init(); err) {
-    std::println(stderr, "Fatal error during app initialization: {}", err.string());
-    std::quick_exit(1);
-    return SDL_APP_FAILURE;
-  }
-  *t_appState = app;
-
-  return SDL_APP_CONTINUE;
+static inline void update() {
+  app.update().mapError(mkErrorFn("execution"));
+  // frame delay/count here
 }
 
-SDL_AppResult SDL_AppIterate(void *t_appState) {
-  static SDL_AppResult result{};
-  static const auto    fatal = [](auto t_e) { destroyApplication(t_e, result); };
-
-  Application *app{};
-  if (result = getApplication(t_appState, &app); result != SDL_APP_CONTINUE) {
-    return result;
+/// Event poll + callback sequence when:
+///  - `ENABLE_APP_CALLBACKS` is not defined
+///  - `main.force_synchronous_events` is enabled
+///  - `graphics.fps_cap` is disabled
+static inline void synchronousEventsUncapped(SDL_Event *t_event) {
+  while (SDL_PollEvent(t_event)) {
+    processEvent(t_event);
   }
-
-  static bool ticking{};
-  app->isTicking(ticking).mapError(fatal);
-  if (app->isInitialized() && !ticking) {
-    result = SDL_APP_SUCCESS;
-    app->destroy().mapError(fatal);
-    return result;
-  }
-  result = SDL_APP_CONTINUE;
-  app->update().mapError(fatal);
-  return result;
+  update();
 }
 
-SDL_AppResult SDL_AppEvent(void *t_appState, SDL_Event *t_evt) {
-  // TODO: rig up to inputs (this is not guaranteed to be called on the main thread so we need to
-  // take care)
-  Application *app{};
-  if (auto err = getApplication(t_appState, &app); err != SDL_APP_CONTINUE) {
-    return err;
+static inline void waitForFrameEnd(uint64_t t_endNs) {
+  auto now = SDL_GetTicksNS();
+  if (now < t_endNs) {
+    SDL_DelayPrecise(t_endNs - now);
   }
-  auto evt = Event(t_evt);
-  if (auto err = app->onEvent(evt); err) {
-    std::println(stderr, "Fatal error processing events ({})", err.string());
-  }
-  return SDL_APP_CONTINUE;
 }
 
-void SDL_AppQuit(void *t_appState, SDL_AppResult t_result) {
-  t_result = SDL_APP_FAILURE;
-  Application *app{};
-  if (auto err = getApplication(t_appState, &app); err != SDL_APP_CONTINUE) {
-    t_result = err;
-    return;
+/// Event poll + callback sequence when:
+///  - `ENABLE_APP_CALLBACKS` is not defined
+///  - `main.force_synchronous_events` is enabled
+///  - `graphics.fps_cap` is enabled
+static inline void synchronousEventsOnFrameInterval(SDL_Event *t_event, auto t_fps) {
+  uint64_t targetNs    = FPS_TO_NS(t_fps);
+  auto     endNs       = SDL_GetTicksNS() + targetNs;
+  auto     remainingNs = (SDL_GetTicksNS() < endNs) ? (endNs - SDL_GetTicksNS()) : 0;
+  if (SDL_WaitEventTimeout(t_event, static_cast<int32_t>(remainingNs / NS_IN_MS))) {
+    processEvent(t_event);
   }
-  if (auto err = app->destroy(); !err) {
-    std::println(stderr, "Fatal error during shutdown {}", err.string());
-    t_result = SDL_APP_SUCCESS;
+  synchronousEventsUncapped(t_event);
+  while (SDL_PollEvent(t_event)) {
+    processEvent(t_event);
   }
-  app->~Application();
-  std::free(t_appState);
+  update();
+  waitForFrameEnd(endNs);
 }
 
-// NOLINTEND(*-owning-memory, *-no-malloc, *-avoid-c-arrays, *-declaration-parameter-name)
+int main() {
+  app.init().mapError(mkErrorFn("initialization"));
+
+  using enum Config::ESystemConfigs;
+  *config   = Configs{.main     = std::any_cast<MainConfigData>(app.config.get(MAIN)),
+                      .graphics = std::any_cast<GraphicsConfigData>(app.config.get(GRAPHICS))};
+  auto &fps = config->graphics.fps_cap;
+
+  if (config->main.force_synchronous_events) {
+    // Event is stored locally
+    SDL_Event evt{};
+
+    while (ticking) {
+      if (fps > 0) {
+        synchronousEventsOnFrameInterval(&evt, fps);
+      }
+      update();
+    }
+  } else {
+    // Potentially called by another thread
+    SDL_AddEventWatch(
+        [](void *, SDL_Event *t_event) {
+          processEvent(t_event);
+          return true;
+        },
+        nullptr);
+
+    while (ticking) {
+      if (fps > 0) {
+        waitForFrameEnd(SDL_GetTicksNS() + uint64_t(FPS_TO_NS(fps)));
+      }
+      update();
+    }
+  }
+  app.destroy().mapError(mkErrorFn("deinitialization"));
+}
+
+#endif
 #endif

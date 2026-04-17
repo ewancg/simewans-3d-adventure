@@ -51,11 +51,11 @@ public:
 
   ApplicationError toString(std::string &t_output) {
     std::string buffer;
-    return glzCtxToError(CONFIG_SERIALIZE, glz::write_toml(t_output, this->m_data, buffer));
+    return glzCtxToError(SERIALIZE, glz::write_toml(t_output, this->m_data, buffer));
   }
   ApplicationError fromString(std::string &t_input) {
     std::string buffer;
-    return glzCtxToError(CONFIG_DESERIALIZE, glz::read_toml(this->m_data, t_input, buffer));
+    return glzCtxToError(DESERIALIZE, glz::read_toml(this->m_data, t_input, buffer));
   }
   ApplicationError reload(std::string &t_inFilePath) {
     std::string buffer;

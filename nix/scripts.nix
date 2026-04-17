@@ -24,6 +24,13 @@ let
     clean = name: '' # No arguments
         git clean -xdf
       '';
+    get-host-target = name: ''
+      nix show-config 2>/dev/null | ${pkgs.gawk}/bin/awk -F' = ' '/^system/ {print $2}' | ${pkgs.coreutils}/bin/head -n -1
+    '';
+    show-target-packages = name: ''
+      system=$(${scripts.get-host-target.pkg}/bin/${scripts.get-host-target.name})
+      nix flake show --json 2>/dev/null | ${pkgs.jq}/bin/jq --arg sys "$system" '.packages.[$sys] | keys_unsorted | unique[]'
+    '';
     run = name: '' # $1 binary; $2 CMake config
         [ -z "$PROJECT_ROOT" ] && echo "PROJECT_ROOT not set" && exit 1
         BINARY=
@@ -275,8 +282,10 @@ in
 {
   inherit scripts; packages = with pkgs; [
   bat
+  coreutils
+  gawk
   expect
+  jq
   watchexec
-  # sccache
 ];
 }

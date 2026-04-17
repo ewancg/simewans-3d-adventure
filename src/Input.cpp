@@ -8,11 +8,12 @@ Error Input::onInit() {
   if (!SDL_InitSubSystem(SDL_INIT_EVENTS | SDL_INIT_GAMEPAD)) {
     return {INIT, SDL_GetError()};
   }
-  m_app.subscribeToEvents(this, &Input::keyboardEvent, SDL_EVENT_KEY_DOWN, SDL_EVENT_KEY_UP);
-  m_app.subscribeToEvents(this, &Input::mouseMotionEvent, SDL_EVENT_MOUSE_MOTION,
-                          SDL_EVENT_MOUSE_MOTION);
-  m_app.subscribeToEvents(this, &Input::mouseButtonEvent, SDL_EVENT_MOUSE_BUTTON_DOWN,
-                          SDL_EVENT_MOUSE_WHEEL);
+  m_app.subscribeSubsystemToEvents(this, &Input::keyboardEvent, SDL_EVENT_KEY_DOWN,
+                                   SDL_EVENT_KEY_UP);
+  m_app.subscribeSubsystemToEvents(this, &Input::mouseMotionEvent, SDL_EVENT_MOUSE_MOTION,
+                                   SDL_EVENT_MOUSE_MOTION);
+  m_app.subscribeSubsystemToEvents(this, &Input::mouseButtonEvent, SDL_EVENT_MOUSE_BUTTON_DOWN,
+                                   SDL_EVENT_MOUSE_WHEEL);
   return {};
 }
 

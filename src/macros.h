@@ -182,6 +182,7 @@ private:                                                                        
 
 #define APPLICATION_PARENT(NAME)                                                                   \
 public:                                                                                            \
+  friend class Application;                                                                        \
   Application & m_app;                                                                             \
   NO_COPY_MOVE_OR_ASSIGN(NAME, "Application subsystems can't be copied",                           \
                          "Application subsystems can't be moved")                                  \
@@ -196,3 +197,11 @@ public:                                                                         
 private:
 
 #define MIDDLE_F(INPUT) static_cast<float>(INPUT) / 2.F
+
+#define MS_IN_S         1000
+#define NS_IN_S         1000000000
+#define NS_IN_MS        MS_IN_S
+
+#define FPS_TO_S(FPS)   (1.00000000000 / FPS)
+#define FPS_TO_MS(FPS)  FPS_TO_S(FPS) * MS_IN_S
+#define FPS_TO_NS(FPS)  FPS_TO_S(FPS) * NS_IN_S

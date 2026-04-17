@@ -10,7 +10,7 @@ using Error = ApplicationError;
 // Cannot return from calling scope with a function, must use macro
 // NOLINTNEXTLINE(*-macro-usage)
 #define PROPAGATE_ERROR(CONTEXT, OPERATION)                                                        \
-  if (auto err = OPERATION; err != std::nullopt) {                                                 \
+  if (auto err = OPERATION; err) {                                                                 \
     return {CONTEXT, err.string()};                                                                \
   }
 
@@ -23,6 +23,9 @@ Error Application::onInit() {
   SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_URL_STRING, metadata.url);
   SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_TYPE_STRING, metadata.type);
 
+  /// Dynamic error strings (which can be encountered during init) depend on this facility
+  // PROPAGATE_ERROR(INIT, errorStringCache.init());
+
   /// Load the config because it's guaranteed for subsystems at init
   PROPAGATE_ERROR(INIT, config.init());
 
@@ -32,7 +35,7 @@ Error Application::onInit() {
   PROPAGATE_ERROR(INIT, window.init());
   PROPAGATE_ERROR(INIT, input.init());
 
-  PROPAGATE_ERROR(INIT, graphics.attachWindow(window));
+  // PROPAGATE_ERROR(INIT, graphics.attachWindow(window));
 
   window.show().mapError(logPassiveError);
 
@@ -55,6 +58,8 @@ Error Application::onDestroy() {
   PROPAGATE_ERROR(DESTROY, window.destroy());
   PROPAGATE_ERROR(DESTROY, graphics.destroy());
   PROPAGATE_ERROR(DESTROY, audio.destroy());
+
+  // PROPAGATE_ERROR(INIT, errorStringCache.destroy());
   return {};
 }
 

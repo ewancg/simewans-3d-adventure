@@ -104,7 +104,7 @@ Error Graphics::endFrame(double &t_frameTimeOut) {
   SDL_DelayPrecise(static_cast<uint64_t>(m_frameIntervalNS) - frameTime);
 
   m_lastFrameTime = now;
-  t_frameTimeOut  = m_frameIntervalNS / NS_PER_SEC;
+  t_frameTimeOut  = m_frameIntervalNS / NS_IN_S;
   m_renderPass    = nullptr;
   return {};
 }

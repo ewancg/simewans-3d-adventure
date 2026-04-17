@@ -8,7 +8,8 @@
 , cmake
 , gcc
 , ninja
-, glaze # de/serialization of toml for local configs, messagepack for network traffic
+, fmt # formatting for pretty printing & compile time string formatting
+, glaze # de/serialization of toml for local configs, messagepack if we do network traffic
 , openssl # for glaze
 , frozen-containers # contexpr STL-mimicking types
 , sdl3 # graphics, input
@@ -27,6 +28,7 @@ let buildInputs = [
   alsa-lib.dev
   libpulseaudio.dev
   libjack2.dev
+  fmt.dev
 ];
  in stdenv.mkDerivation
 {

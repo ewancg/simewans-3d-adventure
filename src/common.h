@@ -29,9 +29,8 @@
 class Application;
 class ApplicationError;
 class Config;
+class StringHandle;
 
-#define NS_PER_SEC 1000000000.0
-#define NSPF_60FPS (NS_PER_SEC / 60.)
 #include "macros.h"
 
 /// ----- Global types -----
@@ -64,6 +63,51 @@ class Config;
 /// which are expected to return a value and potentially fail should return this and take output
 /// as an argument
 
+// template <typename T, typename S> class ErrorBase : public std::optional<std::tuple<T, const S>>
+// { public:
+//   using Base = std::optional<std::tuple<T, const S>>;
+//   using Base::Base;
+//   using Base::operator=;
+//   using Base::operator*;
+//   using Base::operator bool;
+//
+//   template <typename uint = std::underlying_type<T>>
+//   constexpr ErrorBase(const uint &t_val, const std::string_view msg)
+//       : Base(std::in_place, std::move(static_cast<T>(t_val)), msg) {}
+//   constexpr ErrorBase(T &&t_val, const std::string_view msg)
+//       : Base(std::in_place, std::move(t_val), msg) {}
+//   constexpr ErrorBase(const T &t_val, const std::string_view msg)
+//       : Base(std::in_place, t_val, msg) {}
+//
+//   void mapError(this auto const &t_self, auto &&t_fun) {
+//     if (t_self) {
+//       std::forward<decltype(t_fun)>(t_fun)(t_self);
+//     }
+//   }
+// };
+
+// template <typename T> class ConstantError : public ErrorBase<T, const char *> {
+// public:
+//   using Base = ErrorBase<T, const char *>;
+//   using Base::Base;
+//   using Base::operator=;
+//   using Base::operator*;
+//   using Base::operator bool;
+//   std::string_view string(this auto const &t_self) {
+//     if (!t_self) {
+//       return "";
+//     }
+//
+//     auto [type, str] = *t_self;
+//     auto typeStr     = t_self.context();
+//
+//     static std::string buffer{};
+//     std::format_to(&buffer, "{}: {}", typeStr, t_self.context());
+//     return {std::string_view(buffer)};
+//   }
+// };
+
+// template <typename T> class DynamicError : public ErrorBase<T, StringHandle> {};
 template <typename T, typename Base = std::optional<std::tuple<T, const std::string_view>>>
 class ErrorBase : public Base {
 public:
@@ -105,6 +149,14 @@ static std::shared_ptr<std::string> errorStr(T &t_subsystem, std::string t_str) 
   t_subsystem.template deleteAfterFrame<std::string>(ptr);
   return ptr;
 };
+
+// template <typename T>
+// static std::shared_ptr<std::string> errorStr(T &t_subsystem, std::string t_str) {
+//   auto ptr = std::make_shared<std::string>(t_str);
+//   t_subsystem.template deleteAfterFrame<std::string>(ptr);
+//   return ptr;
+// };
+
 const static auto logPassiveError = []<typename E>(E t_err) {
   std::println(stderr, "Error encountered {}", t_err.string());
 };

@@ -1,0 +1,107 @@
+#define SDL_MAIN_USE_CALLBACKS
+#include <SDL3/SDL_init.h>
+#include <SDL3/SDL_main.h>
+#include <cstdlib>
+#include <iostream>
+
+#include "Error.h"
+
+// The goal with the callbacks is to eliminate a global state for the runtime context of
+// the application so it can defer to the OS's runtime management; allows us to not worry about
+// the mainloop and allows us to receive events via. callback instead of polling for them (adding
+// latency waiting for the next frame)
+
+// NOLINTBEGIN(*-owning-memory, *-no-malloc, *-avoid-c-arrays, *-declaration-parameter-name)
+// These are outright required by SDL and/or its callback system; C++ core guidelines with a C
+// library is an uphill battle; to store a single gsl::owner denoting the primary app (what it
+// wants) I would be completely undermining the callback system's benefits
+static SDL_AppResult getApplication(void *t_inState, Application **t_outApp) {
+  const static auto badState = [] {
+    std::println(stderr, "App state pointer was invalidated since last access.");
+    return SDL_APP_FAILURE;
+  };
+  if (t_inState == nullptr) {
+    return badState();
+  }
+  *t_outApp = static_cast<Application *>(t_inState);
+  if (t_outApp == nullptr) {
+    return badState();
+  }
+  return SDL_APP_CONTINUE;
+};
+
+static void destroyApplication(ApplicationError t_err, SDL_AppResult &t_out) {
+  std::println(stderr, "Fatal error during execution ({})", t_err.string());
+  t_out = SDL_APP_FAILURE;
+  std::quick_exit(1);
+}
+
+// NOLINTNEXTLINE(*-identifier-naming)
+SDL_AppResult SDL_AppInit(void **t_appState, int argc, char *argv[]) {
+  // TODO: process command line arguments
+  (void)argc;
+  (void)argv;
+
+  // If we were not using SDL callbacks I would keep Application on the stack
+  auto *stateBuf = std::aligned_alloc(std::max(sizeof(Application), Application::getHostPageSize()),
+                                      sizeof(Application));
+
+  auto *app = new (stateBuf) Application{};
+  if (auto err = app->init(); err) {
+    std::cerr << "Fatal error during app initialization: " << err.string();
+    std::quick_exit(1);
+    return SDL_APP_FAILURE;
+  }
+  *t_appState = app;
+  return SDL_APP_CONTINUE;
+}
+void SDL_AppQuit(void *t_appState, SDL_AppResult t_result) {
+  t_result = SDL_APP_FAILURE;
+  Application *app{};
+  if (auto err = getApplication(t_appState, &app); err != SDL_APP_CONTINUE) {
+    t_result = err;
+    return;
+  }
+  if (auto err = app->destroy(); err) {
+    std::println(stderr, "Fatal error during shutdown {}", err.string());
+    t_result = SDL_APP_SUCCESS;
+  }
+  app->~Application();
+  std::free(t_appState);
+}
+
+SDL_AppResult SDL_AppIterate(void *t_appState) {
+  static SDL_AppResult result{};
+  static const auto    fatal = [](auto t_e) { destroyApplication(t_e, result); };
+
+  Application *app{};
+  if (result = getApplication(t_appState, &app); result != SDL_APP_CONTINUE) {
+    return result;
+  }
+
+  static thread_local bool ticking{};
+  app->isTicking(ticking).mapError(fatal);
+  if (app->isInitialized() && !ticking) {
+    result = SDL_APP_SUCCESS;
+    app->destroy().mapError(fatal);
+    return result;
+  }
+  result = SDL_APP_CONTINUE;
+  app->update().mapError(fatal);
+  return result;
+}
+
+SDL_AppResult SDL_AppEvent(void *t_appState, SDL_Event *t_evt) {
+  // TODO: rig up to inputs (this is not guaranteed to be called on the main thread so we need to
+  // take care)
+  Application *app{};
+  if (auto err = getApplication(t_appState, &app); err != SDL_APP_CONTINUE) {
+    return err;
+  }
+  auto evt = Event(t_evt);
+  if (auto err = app->onEvent(evt); err) {
+    std::println(stderr, "Fatal error processing events ({})", err.string());
+  }
+  return SDL_APP_CONTINUE;
+}
+// NOLINTEND(*-owning-memory, *-no-malloc, *-avoid-c-arrays, *-declaration-parameter-name)

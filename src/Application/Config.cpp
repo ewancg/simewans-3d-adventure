@@ -27,9 +27,7 @@ ApplicationError Config::init() {
   auto baseDir = formatConfigPath();
   if (!std::filesystem::exists(baseDir)) {
     if (!SDL_CreateDirectory(baseDir.c_str())) {
-      auto str =
-          errorStr(m_app, std::format("couldn't create config directory ({})", SDL_GetError()));
-      return {CONFIG_INIT, std::string_view(*str)};
+      return {CONFIG_INIT, std::format("couldn't create config directory ({})", SDL_GetError())};
     }
   }
   if (std::at_quick_exit(&Config::emergencySave) != 0) {

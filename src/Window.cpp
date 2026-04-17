@@ -21,7 +21,8 @@ Error Window::onInit() {
     std::println(stderr, "Warning from {}: {}", error.context(), msg);
   }
 
-  m_app.subscribeToEvents(this, &Window::event, SDL_EVENT_WINDOW_SHOWN, SDL_EVENT_WINDOW_LAST);
+  m_app.subscribeSubsystemToEvents(this, &Window::event, SDL_EVENT_WINDOW_SHOWN,
+                                   SDL_EVENT_WINDOW_LAST);
   return {};
 }
 // NOLINTEND
