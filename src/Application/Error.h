@@ -10,11 +10,7 @@
   E(CONFIG_WRITE, "writing configurations to disk")                                                \
   /* Serialization */                                                                              \
   E(SERIALIZE, "converting an in-memory data type to string")                                      \
-  E(DESERIALIZE, "converting a string to an in-memory data type")                                  \
-  /* Serialization */                                                                              \
-  E(STRING_INSERT, "inserting string into the application's cache")                                \
-  E(STRING_READ, "reading a string from the application's cache")                                  \
-  E(STRING_REMOVE, "removing a string from the application's cache")
+  E(DESERIALIZE, "converting a string to an in-memory data type")
 DEFINE_DERIVED_ERROR_TYPES(Application, Subsystem, ERROR_ENTRIES);
 //_DEFINE_ERROR_ENUM_TYPE(Application, _ERROR_ENUM_NAME(Subsystem)::END, ENTRIES);
 //_DEFINE_DERIVED_ERROR_CONTEXT_TYPE(Application, _ERROR_ENUM_NAME(Subsystem)::END,

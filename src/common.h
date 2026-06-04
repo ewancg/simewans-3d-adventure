@@ -8,9 +8,9 @@
 /// ----- STL includes -----
 #include <any>
 #include <format>
+#include <iostream>
 #include <memory>
 #include <optional>
-#include <print>
 #include <string>
 #include <string_view>
 #include <tuple>
@@ -138,7 +138,7 @@ public:
     auto                            typeStr = t_self.context();
     // NOLINTNEXTLINE(*-avoid-c-arrays)
     static thread_local std::string buffer{};
-    buffer = std::format("{}: {}", typeStr, t_self.context());
+    buffer = std::format("{}: {}", typeStr, str);
     return {std::string_view(buffer)};
   }
 };
@@ -158,7 +158,7 @@ static std::shared_ptr<std::string> errorStr(T &t_subsystem, std::string t_str) 
 // };
 
 const static auto logPassiveError = []<typename E>(E t_err) {
-  std::println(stderr, "Error encountered {}", t_err.string());
+  std::cerr << "Error encountered " << t_err.string();
 };
 
 using namespace std::string_view_literals;

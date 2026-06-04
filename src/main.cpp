@@ -1,12 +1,11 @@
+#include "Application.h"
 #include <SDL3/SDL_events.h>
-#include <functional>
 
 #ifndef UNIT_TESTING
 #ifdef ENABLE_APP_CALLBACKS
 #include "Application/SDLCallbacks.h"
 #else
 
-#include "Application.h"
 #include "Application/Config.h"
 
 struct Configs {
@@ -18,14 +17,15 @@ struct Configs {
 namespace {
 std::atomic_bool ticking = true;
 Application      app{}; // NOLINT(cert-err58-cpp)
-Configs         *config;
-} // namespace
+Configs          config;
+}; // namespace
 // NOLINTEND(*-avoid-non-const-global-variables)
 
 template <typename Stage> static constexpr auto mkErrorFn(Stage t_stage) {
   return [t_stage](auto t_err) {
+    float f1{}, f2{};
     ticking = false;
-    std::println(stderr, "Fatal error during {}: {}", t_stage, t_err.string());
+    std::cerr << "Fatal error encountered while " << t_err.string() << '\n';
   };
 };
 
@@ -82,11 +82,11 @@ int main() {
   app.init().mapError(mkErrorFn("initialization"));
 
   using enum Config::ESystemConfigs;
-  *config   = Configs{.main     = std::any_cast<MainConfigData>(app.config.get(MAIN)),
+  config    = Configs{.main     = std::any_cast<MainConfigData>(app.config.get(MAIN)),
                       .graphics = std::any_cast<GraphicsConfigData>(app.config.get(GRAPHICS))};
-  auto &fps = config->graphics.fps_cap;
+  auto &fps = config.graphics.fps_cap;
 
-  if (config->main.force_synchronous_events) {
+  if (config.main.force_synchronous_events) {
     // Event is stored locally
     SDL_Event evt{};
 

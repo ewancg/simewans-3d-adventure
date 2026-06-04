@@ -32,7 +32,7 @@ template <typename T> class SerializablePOD {
 
   using enum EApplicationError;
 
-  ApplicationError glzCtxToError(EApplicationError t_type, const glz::error_ctx &t_ctx) {
+  ApplicationError glazeContextToError(EApplicationError t_type, const glz::error_ctx &t_ctx) {
     if (!t_ctx) {
       return {};
     }
@@ -51,19 +51,23 @@ public:
 
   ApplicationError toString(std::string &t_output) {
     std::string buffer;
-    return glzCtxToError(SERIALIZE, glz::write_toml(t_output, this->m_data, buffer));
+    return glazeContextToError(SERIALIZE, glz::write_toml(t_output, m_data, buffer));
   }
   ApplicationError fromString(std::string &t_input) {
     std::string buffer;
-    return glzCtxToError(DESERIALIZE, glz::read_toml(this->m_data, t_input, buffer));
+    return glazeContextToError(DESERIALIZE, glz::read_toml(m_data, t_input, buffer));
   }
+
+  /// Reinitializes the config with data from file path specified
   ApplicationError reload(std::string &t_inFilePath) {
     std::string buffer;
-    return glzCtxToError(CONFIG_READ, glz::read_file_toml(m_data, t_inFilePath, buffer));
+    return glazeContextToError(CONFIG_READ, glz::read_file_toml(m_data, t_inFilePath, buffer));
   }
+
+  /// Saves the config to the file path specified
   ApplicationError save(std::string &t_outFilePath) {
     std::string buffer;
-    return glzCtxToError(
+    return glazeContextToError(
         CONFIG_WRITE, glz::write_file_toml<SystemLocalConfigOpts{}>(m_data, t_outFilePath, buffer));
   }
 };

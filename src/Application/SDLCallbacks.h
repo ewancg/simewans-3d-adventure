@@ -2,7 +2,6 @@
 #include <SDL3/SDL_init.h>
 #include <SDL3/SDL_main.h>
 #include <cstdlib>
-#include <iostream>
 
 #include "Error.h"
 
@@ -17,7 +16,7 @@
 // wants) I would be completely undermining the callback system's benefits
 static SDL_AppResult getApplication(void *t_inState, Application **t_outApp) {
   const static auto badState = [] {
-    std::println(stderr, "App state pointer was invalidated since last access.");
+    std::cerr << "App state pointer was invalidated since last access.\n";
     return SDL_APP_FAILURE;
   };
   if (t_inState == nullptr) {
@@ -31,7 +30,7 @@ static SDL_AppResult getApplication(void *t_inState, Application **t_outApp) {
 };
 
 static void destroyApplication(ApplicationError t_err, SDL_AppResult &t_out) {
-  std::println(stderr, "Fatal error during execution ({})", t_err.string());
+  std::cerr << "Fatal error during execution (" << t_err.string() << ")";
   t_out = SDL_APP_FAILURE;
   std::quick_exit(1);
 }
@@ -63,7 +62,7 @@ void SDL_AppQuit(void *t_appState, SDL_AppResult t_result) {
     return;
   }
   if (auto err = app->destroy(); err) {
-    std::println(stderr, "Fatal error during shutdown {}", err.string());
+    std::cerr << "Fatal error during shutdown (" << err.string() << ")";
     t_result = SDL_APP_SUCCESS;
   }
   app->~Application();
@@ -100,7 +99,7 @@ SDL_AppResult SDL_AppEvent(void *t_appState, SDL_Event *t_evt) {
   }
   auto evt = Event(t_evt);
   if (auto err = app->onEvent(evt); err) {
-    std::println(stderr, "Fatal error processing events ({})", err.string());
+    std::cerr << "Fatal error processing events (" << err.string() << ")";
   }
   return SDL_APP_CONTINUE;
 }

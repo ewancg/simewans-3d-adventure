@@ -1,5 +1,8 @@
 # CTest
 Testing/
 
+# Build
+build/
+
 # This file is generated but we want it in version control
 !.clangd

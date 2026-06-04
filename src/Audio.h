@@ -5,7 +5,7 @@
 
 #if defined(AUDIO_DEBUGGING) && AUDIO_DEBUGGING != false
 #define AUDIO_DEBUGGING
-#define AUDIO_DEBUG_LOG(...) std::println("[audio] info\t:{}", __VA_ARGS__)
+#define AUDIO_DEBUG_LOG(...) std::println("[audio] info:\t{}", __VA_ARGS__);
 #else
 #define AUDIO_DEBUG_LOG(...) (void)(0)
 #endif

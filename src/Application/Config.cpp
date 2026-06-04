@@ -1,6 +1,7 @@
 #include "Config.h"
 #include "../Application.h"
 #include "Error.h"
+#include <string>
 
 using enum Config::EConfigType;
 using enum Config::ESystemConfigs;
@@ -20,16 +21,16 @@ ApplicationError Config::init() {
   auto *str  = SDL_GetPrefPath(Application::metadata.author, Application::metadata.name);
   if (const auto *err = SDL_GetError(); str == nullptr || err != nullptr) {
     auto res = std::string(err);
-    std::format_to(&res, "couldn't determine config path ({})", res);
-    return {CONFIG_INIT, res};
+    return {CONFIG_INIT, std::format("couldn't determine config path ({})", res)};
   }
   m_configPath.assign(str);
   auto baseDir = formatConfigPath();
-  if (!std::filesystem::exists(baseDir)) {
-    if (!SDL_CreateDirectory(baseDir.c_str())) {
-      return {CONFIG_INIT, std::format("couldn't create config directory ({})", SDL_GetError())};
-    }
-  }
+  //   if (!std::filesystem::exists(baseDir)) {
+  //     if (!SDL_CreateDirectory(baseDir.c_str())) {
+  //       return {CONFIG_INIT, std::format("couldn't create config directory ({})",
+  //       SDL_GetError())};
+  //     }
+  //   }
   if (std::at_quick_exit(&Config::emergencySave) != 0) {
     logPassiveError(
         ApplicationError{CONFIG_INIT, "unable to register at_quick_exit hook for saving configs"});

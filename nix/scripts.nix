@@ -100,7 +100,7 @@ let
       BINARY_NAME="$1" && shift
       CONFIG="$1" && shift
       OUTPUT="$1" && shift
-      [ -e "$OUTPUT" ] && rm "$OUTPUT"
+      [ -e "$OUTPUT" ] && rm -f "$OUTPUT"
       OUTPUT_DIRNAME="$(dirname "$OUTPUT")"
       [ ! -d "$OUTPUT_DIRNAME" ] && mkdir -p "$OUTPUT_DIRNAME"
       BINARY="$(${scripts.run.pkg}/bin/run -q -c "$CONFIG" "$BINARY_NAME")"
@@ -110,7 +110,7 @@ let
       BINARY_NAME="$1" && shift
       CONFIG="$1" && shift
       OUTPUT="''${1}.exe" && shift
-      [ -e "$OUTPUT" ] && rm "$OUTPUT"
+      [ -e "$OUTPUT" ] && rm -f "$OUTPUT"
       OUTPUT_DIRNAME="$(dirname "$OUTPUT")"
       [ ! -d "$OUTPUT_DIRNAME" ] && mkdir -p "$OUTPUT_DIRNAME"
       nix build ".#windows-x86_64-debug" --extra-experimental-features "nix-command flakes"

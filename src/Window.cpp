@@ -18,7 +18,7 @@ Error Window::onInit() {
   m_handle = std::shared_ptr<SDL_Window>(handle, SDL_DestroyWindow);
   if (auto error = move(SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED); error) {
     auto [type, msg] = *error;
-    std::println(stderr, "Warning from {}: {}", error.context(), msg);
+    std::cerr << "Warning from " << ": " << error.context();
   }
 
   m_app.subscribeSubsystemToEvents(this, &Window::event, SDL_EVENT_WINDOW_SHOWN,

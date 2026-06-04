@@ -75,7 +75,7 @@ Error Application::onUpdate() {
   double lastFrameTime{};
   graphics.endFrame(lastFrameTime).mapError(logPassiveError);
 #if (APPLICATION_DEBUGGING == true)
-  std::println(stdout, "frame time: {}", lastFrameTime);
+  std::println("frame time: {}", lastFrameTime);
 #endif
   return {};
 }
@@ -107,9 +107,10 @@ Error Application::onEvent(Event &t_evt) {
       break;
 
     case SDL_EVENT_KEY_DOWN:
-      std::println("{}, {}, {}, {}", mainConfig.null_brush_color.r, mainConfig.null_brush_color.g,
+      std::println("{} {} {} {}", mainConfig.null_brush_color.r, mainConfig.null_brush_color.g,
                    mainConfig.null_brush_color.b, mainConfig.null_brush_color.a);
-      std::println("{}, {}, {}", graphicsConfig.dpi_override, graphicsConfig.fps_cap,
+
+      std::println("{} {} {}", graphicsConfig.dpi_override, graphicsConfig.fps_cap,
                    graphicsConfig.vsync);
       break;
     case SDL_EVENT_SYSTEM_THEME_CHANGED:
@@ -149,7 +150,7 @@ Error Application::onEvent(Event &t_evt) {
       break;
     default:
 #if (APPLICATION_DEBUGGING == true)
-      std::println("event dropped {}", t_evt.second.type);
+      std::println("event dropped: {}", t_evt.second.type);
 #endif
       return {};
     }

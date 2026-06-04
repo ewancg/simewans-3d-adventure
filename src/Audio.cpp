@@ -153,7 +153,7 @@ Error Audio::openDevice(const AudioDevice &t_inputDevice) {
             switch (t_notification->type) {
 #ifdef AUDIO_DEBUGGING
 #define LOG_AUDIO_EVENT(EVENT)                                                                     \
-  std::println("Playback " EVENT " on '{}'", t_notification->pDevice->playback.name)
+  std::println("Playback " EVENT " on '{}'", t_notification->pDevice->playback.name);
             case ma_device_notification_type_started:
               LOG_AUDIO_EVENT("started");
               break;
@@ -173,6 +173,7 @@ Error Audio::openDevice(const AudioDevice &t_inputDevice) {
               std::println("Playback rerouted from '{}' to '{}'",
                            audioContext->getCurrentDeviceName(),
                            t_notification->pDevice->playback.name);
+
 #else
             case ma_device_notification_type_rerouted:
 #endif
